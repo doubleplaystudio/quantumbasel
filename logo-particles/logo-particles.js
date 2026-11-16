@@ -11,7 +11,9 @@
  *            [data-logo-particles="hint"]    optional – Hinweis, blendet nach Intro ein
  * Optionen (Attribute auf der Hero-Section, alle optional):
  *   data-lp-viscosity="1"  data-lp-size="1"  data-lp-glow="1"  data-lp-flow="1"
- *   data-lp-shimmer="1"    data-lp-mouse="1" data-lp-count="20000" data-lp-count-mobile="9000"
+ *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
+ *   data-lp-dissolve-start="0.9"  data-lp-dissolve-length="1"  (in Bildschirmhöhen)
+ *   data-lp-mouse="1" data-lp-count="20000" data-lp-count-mobile="9000"
  *   data-lp-tints="#b6f5a0,#6fe3d6,#6f95dc"  (Farben des Hintergrund-Sternenfelds)
  * Tuning:    ?lp-tune an die URL hängen -> Regler-Panel inkl. "Attribute kopieren"
  * API:       window.LogoParticles.replay() / .destroy()
@@ -105,13 +107,16 @@ function init() {
 
   const settings = {
     size: opt('size', 1), glow: opt('glow', 1), flow: reduced ? 0 : opt('flow', 1),
-    shimmer: reduced ? 0 : opt('shimmer', 1), mouse: opt('mouse', 1), viscosity: opt('viscosity', 1)
+    shimmer: reduced ? 0 : opt('shimmer', 1), shimmerSpeed: opt('shimmer-speed', 1), pulse: opt('pulse', 1),
+    mouse: opt('mouse', 1), viscosity: opt('viscosity', 1),
+    dissolveStart: opt('dissolve-start', 0.9), dissolveLength: Math.max(0.05, opt('dissolve-length', 1))
   };
   const uniforms = {
     uTime: { value: 0 }, uIntro: { value: reduced ? 1 : 0 }, uDissolve: { value: 0 },
     uMouse: { value: new THREE.Vector2(0, 0) }, uMouseB: { value: new THREE.Vector2(0, 0) }, uMousePresence: { value: 0 },
     uMouseAmt: { value: settings.mouse }, uAspect: { value: 1 }, uScale: { value: DPR }, uSize: { value: settings.size },
-    uGlow: { value: settings.glow }, uJitter: { value: settings.shimmer }, uFlowTime: { value: 0 }
+    uGlow: { value: settings.glow }, uJitter: { value: settings.shimmer }, uFlowTime: { value: 0 },
+    uShimmerTime: { value: 0 }, uPulse: { value: settings.pulse }
   };
 
   const logoMat = new THREE.ShaderMaterial({
@@ -119,7 +124,7 @@ function init() {
     blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor,
     vertexShader: /* glsl */`
       attribute vec3 aStart; attribute vec3 aScatter; attribute vec3 aColor; attribute float aT; attribute vec4 aRand;
-      uniform float uTime, uIntro, uDissolve, uAspect, uScale, uSize, uMouseAmt, uJitter, uFlowTime, uLayer;
+      uniform float uTime, uIntro, uDissolve, uAspect, uScale, uSize, uMouseAmt, uJitter, uFlowTime, uLayer, uShimmerTime, uPulse;
       uniform vec2 uMouse, uMouseB; uniform float uMousePresence;
       varying vec3 vColor; varying float vAlpha; varying float vPulse;
       float ease(float x){ return 1.0 - pow(1.0 - clamp(x,0.,1.), 3.0); }
@@ -128,7 +133,7 @@ function init() {
         float local = ease((uIntro * 1.9 - aT * 0.6 - aRand.z * 0.3));
         vec3 shape = position;
         float ph = aRand.y * 6.2831;
-        shape += 0.0045 * uJitter * vec3(sin(uTime*1.7+ph), cos(uTime*1.3+ph*1.7), sin(uTime*1.1+ph*2.3));
+        shape += 0.0045 * uJitter * vec3(sin(uShimmerTime*1.7+ph), cos(uShimmerTime*1.3+ph*1.7), sin(uShimmerTime*1.1+ph*2.3));
         vec3 swirl = aStart;
         float a = (1.0 - local) * 2.2;
         swirl.xz = mat2(cos(a), -sin(a), sin(a), cos(a)) * swirl.xz;
@@ -154,7 +159,7 @@ function init() {
         // Light pulses travelling along the loop
         float f1 = fract(aT - uFlowTime) ; float g1 = exp(-pow(min(f1, 1.0-f1), 2.0) / 0.0016);
         float f2 = fract(aT - uFlowTime - 0.5); float g2 = exp(-pow(min(f2, 1.0-f2), 2.0) / 0.0016);
-        vPulse = max(g1, g2) * local * (1.0 - d);
+        vPulse = max(g1, g2) * local * (1.0 - d) * uPulse;
 
         float big = step(0.985, aRand.x);
         float s = mix(1.0, 2.0, pow(aRand.x, 5.0)) + big * 2.5;
@@ -163,7 +168,7 @@ function init() {
         if (uLayer > 0.5) s = 26.0 * (0.6 + aRand.x) * (1.0 - d) * local * local;
         gl_PointSize = uSize * s * uScale * (3.6 / -mv.z);
         vColor = aColor;
-        vAlpha = (0.35 + 0.65 * local) * mix(1.0, 0.75, d) * (0.8 + 0.2 * sin(uTime * (0.6 + aRand.z) + ph) * min(uJitter, 1.5));
+        vAlpha = (0.35 + 0.65 * local) * mix(1.0, 0.75, d) * (0.8 + 0.2 * sin(uShimmerTime * (0.6 + aRand.z) + ph) * min(uJitter, 1.5));
       }`,
     fragmentShader: /* glsl */`
       uniform float uGlow, uLayer;
@@ -289,6 +294,7 @@ function init() {
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
     uniforms.uTime.value = t;
     uniforms.uFlowTime.value += dt * 0.09 * settings.flow;
+    uniforms.uShimmerTime.value += dt * settings.shimmerSpeed;
     if (!reduced) uniforms.uIntro.value = Math.min(1, (performance.now() - introStart) / INTRO_MS);
 
     // scroll (Lenis already smooths -> lighter smoothing on top)
@@ -297,7 +303,7 @@ function init() {
     const target = y / innerHeight;
     smoothScroll += (target - smoothScroll) * (reduced ? 1 : (l ? 0.3 : 0.08));
     const p1 = Math.min(1, smoothScroll);
-    const p2 = Math.max(0, Math.min(1, smoothScroll - 0.9));
+    const p2 = Math.max(0, Math.min(1, (smoothScroll - settings.dissolveStart) / settings.dissolveLength));
     uniforms.uDissolve.value = p2;
 
     // viscous follow (frame-rate independent)
@@ -332,18 +338,23 @@ function init() {
 
   /* ---------- tuning panel (?lp-tune) ---------- */
   if (/[?&]lp-tune/.test(location.search)) {
-    const defs = [['size', 'Partikelgröße', 0.4, 2.5], ['glow', 'Helligkeit', 0.2, 2], ['flow', 'Flow-Tempo', 0, 3],
-      ['shimmer', 'Schimmern', 0, 3], ['viscosity', 'Zähigkeit', 0, 3], ['mouse', 'Maus-Streuung', 0, 2]];
+    const defs = [['size', 'Partikelgröße', 0.4, 2.5], ['glow', 'Helligkeit', 0.2, 2], ['flow', 'Puls-Tempo', 0, 3],
+      ['pulse', 'Puls-Helligkeit', 0, 2], ['shimmer', 'Schimmern', 0, 3], ['shimmer-speed', 'Schimmer-Tempo', 0, 3],
+      ['viscosity', 'Zähigkeit', 0, 3], ['mouse', 'Maus-Streuung', 0, 2],
+      ['dissolve-start', 'Auflösung Start (vh)', 0, 3], ['dissolve-length', 'Auflösung Dauer (vh)', 0.1, 3]];
     const apply = { size: v => uniforms.uSize.value = v, glow: v => uniforms.uGlow.value = v, flow: v => settings.flow = v,
-      shimmer: v => uniforms.uJitter.value = v, viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
+      shimmer: v => uniforms.uJitter.value = v, pulse: v => uniforms.uPulse.value = v,
+      'shimmer-speed': v => settings.shimmerSpeed = v,
+      'dissolve-start': v => settings.dissolveStart = v, 'dissolve-length': v => settings.dissolveLength = Math.max(0.05, v), viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
     const panel = document.createElement('div'); panel.className = 'lp-tune';
+    const ck = k => k.replace(/-(\w)/g, (m, c) => c.toUpperCase());   // attribute name -> settings key
     panel.innerHTML = defs.map(([k, l, mn, mx]) =>
-      `<label>${l} <output>${settings[k].toFixed(2)}</output><input type="range" data-k="${k}" min="${mn}" max="${mx}" step="0.05" value="${settings[k]}"></label>`).join('')
+      `<label>${l} <output>${settings[ck(k)].toFixed(2)}</output><input type="range" data-k="${k}" min="${mn}" max="${mx}" step="0.05" value="${settings[ck(k)]}"></label>`).join('')
       + '<button type="button">Attribute kopieren</button>';
     panel.addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return;
-      const v = +e.target.value; settings[k] = v; apply[k](v); e.target.previousElementSibling.textContent = v.toFixed(2); });
+      const v = +e.target.value; settings[ck(k)] = v; apply[k](v); e.target.previousElementSibling.textContent = v.toFixed(2); });
     panel.querySelector('button').addEventListener('click', async e => {
-      const txt = defs.map(([k]) => `data-lp-${k}="${(+settings[k]).toFixed(2)}"`).join(' ');
+      const txt = defs.map(([k]) => `data-lp-${k}="${(+settings[ck(k)]).toFixed(2)}"`).join(' ');
       try { await navigator.clipboard.writeText(txt); e.target.textContent = 'Kopiert ✓'; }
       catch { e.target.textContent = txt; }
     });

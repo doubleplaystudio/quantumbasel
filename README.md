@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.0.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.0.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -43,8 +43,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.0.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.0.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
@@ -58,7 +58,11 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 | `data-lp-size` | `1` | Partikelgröße |
 | `data-lp-glow` | `1` | Helligkeit |
 | `data-lp-flow` | `1` | Tempo der Licht-Pulse |
-| `data-lp-shimmer` | `1` | Flirren der Partikel |
+| `data-lp-pulse` | `1` | Helligkeit der Licht-Pulse (0 = aus) |
+| `data-lp-shimmer` | `1` | Stärke des Flirrens (Bewegung + Helligkeit einzelner Partikel) |
+| `data-lp-shimmer-speed` | `1` | Tempo des Flirrens |
+| `data-lp-dissolve-start` | `0.9` | Scroll-Distanz (in Bildschirmhöhen), ab der sich das Logo auflöst |
+| `data-lp-dissolve-length` | `1` | Scroll-Strecke (in Bildschirmhöhen), über die sich das Logo auflöst |
 | `data-lp-count` / `data-lp-count-mobile` | `20000` / `9000` | Partikelanzahl |
 | `data-lp-tints` | Logo-Farben | Farben des Sternenfelds, z. B. `#b6f5a0,#6fe3d6,#6f95dc` |
 
