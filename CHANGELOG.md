@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.0 – 2026-11-16
+
+- Neu: `data-logo-particles="intro-hide"` – Elemente (z. B. die Nav) bleiben ausgeblendet, bis sich das Logo gebildet hat, und blenden dann weich ein
+- Kommen sofort zurück bei Scroll, Wheel, Touch oder Taste; beim Replay (oben auf der Seite) werden sie wieder versteckt
+- Neu: `data-lp-reveal-at` – Zeitpunkt des Einblendens als Anteil des Intros (Default 0.8)
+- `html.lp-intro-done` wird gesetzt, sobald das Intro-UI sichtbar ist (bei reduced-motion und ohne WebGL sofort)
+- Head-Snippet gegen kurzes Aufblitzen beim Laden, siehe README
+
 ## v1.1.0 – 2026-11-16
 
 - Neu: `data-lp-pulse` – Helligkeit der Licht-Pulse (war fest eingebaut)

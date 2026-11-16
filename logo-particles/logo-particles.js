@@ -9,10 +9,13 @@
  *            [data-logo-particles="split"]   optional – Text, wird buchstabenweise eingeblendet
  *            [data-logo-particles="replay"]  optional – Button: Intro neu abspielen
  *            [data-logo-particles="hint"]    optional – Hinweis, blendet nach Intro ein
+ *            [data-logo-particles="intro-hide"] optional – z. B. Nav: versteckt, bis sich das Logo gebildet hat
+ *                                             (kommt sofort zurück bei Scroll / Touch / Taste)
  * Optionen (Attribute auf der Hero-Section, alle optional):
  *   data-lp-viscosity="1"  data-lp-size="1"  data-lp-glow="1"  data-lp-flow="1"
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
  *   data-lp-dissolve-start="0.9"  data-lp-dissolve-length="1"  (in Bildschirmhöhen)
+ *   data-lp-reveal-at="0.8"  (Anteil des Intros, ab dem intro-hide-Elemente einblenden)
  *   data-lp-mouse="1" data-lp-count="20000" data-lp-count-mobile="9000"
  *   data-lp-tints="#b6f5a0,#6fe3d6,#6f95dc"  (Farben des Hintergrund-Sternenfelds)
  * Tuning:    ?lp-tune an die URL hängen -> Regler-Panel inkl. "Attribute kopieren"
@@ -47,6 +50,8 @@ function init() {
       transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1),filter .9s}
     .lp-in .lp-letter{opacity:1;transform:none;filter:none}
     [data-logo-particles="hint"]{opacity:0}
+    [data-logo-particles="intro-hide"]{transition:opacity .9s cubic-bezier(.2,.7,.2,1),visibility .9s}
+    html:not(.lp-intro-done) [data-logo-particles="intro-hide"]{opacity:0;visibility:hidden;pointer-events:none}
     .lp-tune{position:fixed;left:16px;bottom:16px;z-index:9999;width:260px;padding:14px;border-radius:12px;
       background:rgba(8,11,18,.9);border:1px solid rgba(255,255,255,.12);color:#eef4f6;font:12px/1.3 system-ui,sans-serif;backdrop-filter:blur(12px)}
     .lp-tune label{display:grid;grid-template-columns:1fr auto;gap:3px 8px;margin-bottom:9px;opacity:.85}
@@ -64,6 +69,7 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'high-performance' });
   } catch (e) {
     document.documentElement.classList.add('lp-no-webgl');   // -> in Webflow ein statisches Fallback zeigen
+    document.documentElement.classList.add('lp-intro-done');
     wrap.remove(); return;
   }
   const DPR = Math.min(devicePixelRatio, isMobile ? 1.5 : 2);
@@ -263,7 +269,13 @@ function init() {
   const INTRO_MS = 3400;
   let introStart = performance.now();
   const lenis = () => window.lenis || window.__lenis || null;
+  // Elements marked intro-hide (e.g. the nav) wait for the logo – but never block the user.
+  const REVEAL_AT = Math.min(1, Math.max(0, opt('reveal-at', 0.8)));  // share of the intro
+  const revealUI = () => document.documentElement.classList.add('lp-intro-done');
+  ['wheel', 'touchstart', 'keydown'].forEach(ev => addEventListener(ev, revealUI, { passive: true }));
+  addEventListener('scroll', () => { if (scrollY > 10) revealUI(); }, { passive: true });
   function replay() {
+    if (!reduced && scrollY < 10) document.documentElement.classList.remove('lp-intro-done'); else revealUI();
     document.documentElement.classList.remove('lp-in');
     introStart = performance.now();
     uniforms.uIntro.value = reduced ? 1 : 0;
@@ -296,6 +308,7 @@ function init() {
     uniforms.uFlowTime.value += dt * 0.09 * settings.flow;
     uniforms.uShimmerTime.value += dt * settings.shimmerSpeed;
     if (!reduced) uniforms.uIntro.value = Math.min(1, (performance.now() - introStart) / INTRO_MS);
+    if (uniforms.uIntro.value >= REVEAL_AT) revealUI();
 
     // scroll (Lenis already smooths -> lighter smoothing on top)
     const l = lenis();

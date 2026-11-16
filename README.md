@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -34,6 +34,7 @@ Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
 | Labels („Quantum“, „Basel“) | `data-logo-particles="split"` | im Overlay; optional `data-lp-delay="900"` (ms) |
 | Replay-Button | `data-logo-particles="replay"` | im Overlay |
 | Hinweis-Text | `data-logo-particles="hint"` | optional, erscheint nach dem Intro |
+| Nav (oder anderes UI) | `data-logo-particles="intro-hide"` | optional, ausgeblendet, bis sich das Logo gebildet hat; kommt sofort zurück bei Scroll, Touch oder Taste |
 
 Außerdem:
 - **`.main-content`** braucht `position: relative; z-index: 1`. Der Canvas liegt fixed bei `z-index: 0` direkt im Body.
@@ -43,11 +44,18 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.1.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
+
+**Nur bei `intro-hide`:** Damit die Nav beim Laden nicht kurz aufblitzt, kommt zusätzlich dieses Snippet in **Page Settings → Inside `<head>`**. Der Timer blendet die Nav nach 5 s auf jeden Fall ein, auch wenn das Script mal nicht lädt.
+
+```html
+<style>html:not(.lp-intro-done) [data-logo-particles="intro-hide"]{opacity:0;visibility:hidden}</style>
+<script>setTimeout(function(){document.documentElement.classList.add('lp-intro-done')},5000)</script>
+```
 
 ## 4. Optionen (Attribute auf der Hero-Section)
 
@@ -63,6 +71,7 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 | `data-lp-shimmer-speed` | `1` | Tempo des Flirrens |
 | `data-lp-dissolve-start` | `0.9` | Scroll-Distanz (in Bildschirmhöhen), ab der sich das Logo auflöst |
 | `data-lp-dissolve-length` | `1` | Scroll-Strecke (in Bildschirmhöhen), über die sich das Logo auflöst |
+| `data-lp-reveal-at` | `0.8` | Anteil des Intros, ab dem `intro-hide`-Elemente einblenden (1 = erst ganz am Ende) |
 | `data-lp-count` / `data-lp-count-mobile` | `20000` / `9000` | Partikelanzahl |
 | `data-lp-tints` | Logo-Farben | Farben des Sternenfelds, z. B. `#b6f5a0,#6fe3d6,#6f95dc` |
 
