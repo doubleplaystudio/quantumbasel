@@ -24,6 +24,8 @@
  *   data-lp-cursor-label=""    optional – Text neben der Wolke (Default: kein Text)
  *   data-lp-cursor-trail="1"   wie stark die Wolke dem Zeiger nachzieht (höher = träger)
  *   data-lp-cursor-size="1"     Größe der Cursor-Wolke
+ *   data-lp-cursor-count="320"  Anzahl Partikel der Cursor-Wolke
+ *   data-lp-blend="1"           wie stark Loop-Partikel unter dem Cursor verschwimmen (0 = nur ausweichen)
  *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
  *   data-lp-scale="1"     (Logo-Größe)
  *   Beide auch mit eigenem Mobile-Wert: data-lp-offset-y-mobile, data-lp-scale-mobile (< 768 px)
@@ -56,7 +58,6 @@ function init() {
     .lp-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
     .lp-canvas canvas{display:block;width:100%;height:100%}
     [data-logo-particles="hero"]{touch-action:pan-y;-webkit-user-select:none;user-select:none}
-    .lp-cursor{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;opacity:0;will-change:transform;mix-blend-mode:screen}
     .lp-cursor-label{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;opacity:0;will-change:transform;
       font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#fff;white-space:nowrap;mix-blend-mode:difference}
     [data-logo-particles="chrome"]{pointer-events:none}
@@ -95,6 +96,7 @@ function init() {
   const DPR = Math.min(devicePixelRatio, isMobile ? 1.5 : 2);
   renderer.setPixelRatio(DPR);
   renderer.setClearColor(0x000000, 0);
+  renderer.autoClear = false;
   wrap.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -135,7 +137,7 @@ function init() {
     size: opt('size', 1), glow: opt('glow', 1), flow: reduced ? 0 : opt('flow', 1),
     shimmer: reduced ? 0 : opt('shimmer', 1), shimmerSpeed: opt('shimmer-speed', 1), pulse: opt('pulse', 1),
     mouse: opt('mouse', 1), viscosity: opt('viscosity', 1),
-    offsetY: optR('offset-y', 0), scale: optR('scale', 1),
+    offsetY: optR('offset-y', 0), scale: optR('scale', 1), blend: opt('blend', 1),
     dissolveStart: opt('dissolve-start', 0.9), dissolveLength: Math.max(0.05, opt('dissolve-length', 1))
   };
   const uniforms = {
@@ -143,7 +145,7 @@ function init() {
     uMouse: { value: new THREE.Vector2(0, 0) }, uMouseB: { value: new THREE.Vector2(0, 0) }, uMousePresence: { value: 0 },
     uMouseAmt: { value: settings.mouse }, uAspect: { value: 1 }, uScale: { value: DPR }, uSize: { value: settings.size },
     uGlow: { value: settings.glow }, uJitter: { value: settings.shimmer }, uFlowTime: { value: 0 },
-    uShimmerTime: { value: 0 }, uPulse: { value: settings.pulse }
+    uShimmerTime: { value: 0 }, uPulse: { value: settings.pulse }, uBlend: { value: settings.blend }
   };
 
   const logoMat = new THREE.ShaderMaterial({
@@ -152,8 +154,8 @@ function init() {
     vertexShader: /* glsl */`
       attribute vec3 aStart; attribute vec3 aScatter; attribute vec3 aColor; attribute float aT; attribute vec4 aRand;
       uniform float uTime, uIntro, uDissolve, uAspect, uScale, uSize, uMouseAmt, uJitter, uFlowTime, uLayer, uShimmerTime, uPulse;
-      uniform vec2 uMouse, uMouseB; uniform float uMousePresence;
-      varying vec3 vColor; varying float vAlpha; varying float vPulse;
+      uniform vec2 uMouse, uMouseB; uniform float uMousePresence, uBlend;
+      varying vec3 vColor; varying float vAlpha; varying float vPulse; varying float vBlur;
       float ease(float x){ return 1.0 - pow(1.0 - clamp(x,0.,1.), 3.0); }
       void main(){
         // Intro: particles collapse from a diffuse cloud onto the loop, staggered along the path (t)
@@ -179,7 +181,10 @@ function init() {
         vec2 dir = (ndc - m) * vec2(uAspect, 1.0);
         float dist = length(dir);
         float push = exp(-dist*dist / 0.03) * uMouseAmt * uMousePresence * (1.0 - d) * local;
-        mv.xy += normalize(dir + 1e-5) * push * 0.12 * (0.6 + aRand.x);
+        float bl = push * uBlend;                          // "blend": particles swirl and soften into each other
+        vec2 nd = normalize(dir + 1e-5);
+        mv.xy += nd * push * 0.12 * (0.6 + aRand.x) * (1.0 - 0.45 * min(uBlend, 1.0));
+        mv.xy += vec2(-nd.y, nd.x) * bl * 0.07 * (aRand.z - 0.35);
         mv.z += push * 0.15 * (aRand.y - 0.5);
         gl_Position = projectionMatrix * mv;
 
@@ -190,16 +195,17 @@ function init() {
 
         float big = step(0.985, aRand.x);
         float s = mix(1.0, 2.0, pow(aRand.x, 5.0)) + big * 2.5;
-        s *= 1.0 + vPulse * 0.9 + push * 1.5;
+        s *= 1.0 + vPulse * 0.9 + push * 1.5 + bl * 2.2;
+        vBlur = clamp(bl, 0.0, 1.0);
         s *= mix(1.0, 0.8, d);
         if (uLayer > 0.5) s = 26.0 * (0.6 + aRand.x) * (1.0 - d) * local * local;
         gl_PointSize = uSize * s * uScale * (3.6 / -mv.z);
         vColor = aColor;
-        vAlpha = (0.35 + 0.65 * local) * mix(1.0, 0.75, d) * (0.8 + 0.2 * sin(uShimmerTime * (0.6 + aRand.z) + ph) * min(uJitter, 1.5));
+        vAlpha = (0.35 + 0.65 * local) * mix(1.0, 0.75, d) * (0.8 + 0.2 * sin(uShimmerTime * (0.6 + aRand.z) + ph) * min(uJitter, 1.5)) / (1.0 + bl * 2.2);
       }`,
     fragmentShader: /* glsl */`
       uniform float uGlow, uLayer;
-      varying vec3 vColor; varying float vAlpha; varying float vPulse;
+      varying vec3 vColor; varying float vAlpha; varying float vPulse; varying float vBlur;
       void main(){
         float r = length(gl_PointCoord - 0.5) * 2.0;
         if (r > 1.0) discard;
@@ -212,8 +218,8 @@ function init() {
           gl_FragColor = vec4(o, max(o.r, max(o.g, o.b)));
           return;
         }
-        float core = exp(-r * r * 7.0);
-        float halo = exp(-r * r * 2.2) * 0.35;
+        float core = exp(-r * r * mix(7.0, 1.8, vBlur));
+        float halo = exp(-r * r * mix(2.2, 1.0, vBlur)) * 0.35;
         vec3 col = mix(c, vec3(1.0), 0.08 + vPulse * 0.35);
         vec3 o = col * (core + halo) * vAlpha * uGlow * (0.95 + vPulse * 1.3);
         gl_FragColor = vec4(o, max(o.r, max(o.g, o.b)));
@@ -259,7 +265,7 @@ function init() {
 
   /* ---------- interaction ---------- */
   const rot = { x: 0, y: 0, tx: 0, ty: 0 };
-  const mouseTarget = new THREE.Vector2(0, 0);
+  const mouseTarget = new THREE.Vector2(0, 0), curNDC = new THREE.Vector2();
   let mouseIn = 0, dragging = false, lastX = 0, lastY = 0;
   // Never start a drag on interactive content (links, buttons, inputs) or opt-out areas
   const NO_DRAG = 'a,button,input,textarea,select,label,[role="button"],[data-lp-no-drag]';
@@ -290,84 +296,115 @@ function init() {
   document.addEventListener('mouseleave', onLeave);
 
 
-  /* ---------- particle cursor (desktop, fine pointer only) ---------- */
+  /* ---------- particle cursor (desktop, fine pointer only) ----------
+     Rendered in the same WebGL canvas with the same particle look as the loop.
+     A short position history turns the round cloud into a comet tail on fast moves. */
   const CUR_FOLLOW = 5 / Math.max(0.2, opt('cursor-trail', 1));   // follow rate; lower = more trailing
   const CURSOR_ON = hero.getAttribute('data-lp-cursor') !== 'false' && matchMedia('(hover: hover) and (pointer: fine)').matches;
   const cursorLabelText = hero.getAttribute('data-lp-cursor-label') || '';
   let cur = null;
   if (CURSOR_ON) {
-    document.documentElement.classList.add('lp-has-cursor');
-    const cv = document.createElement('canvas');
-    cv.className = 'lp-cursor'; cv.setAttribute('aria-hidden', 'true');
+    const CS = Math.max(0.3, opt('cursor-size', 1));
+    const CN = Math.max(40, Math.round(opt('cursor-count', 320)));
+    const HIST = 24;
+    const cPos = new Float32Array(CN * 3), cCol = new Float32Array(CN * 3), cSize = new Float32Array(CN), cAlpha = new Float32Array(CN), cSoft = new Float32Array(CN);
+    const P = [];
+    for (let i = 0; i < CN; i++) {
+      const k6 = Math.floor(rnd() * SN) * 6;                       // colours straight from the logo
+      cCol.set([src[k6 + 2] / 255, src[k6 + 3] / 255, src[k6 + 4] / 255], i * 3);
+      const ra = rnd();
+      P.push({
+        r: (3 + Math.pow(rnd(), 0.75) * 15) * CS,                  // orbit radius (px)
+        a: rnd() * Math.PI * 2, w: (0.6 + rnd() * 1.4) * (rnd() < 0.5 ? -1 : 1), e: 0.6 + rnd() * 0.4,
+        tail: rnd() < 0.4 ? 0 : Math.pow(rnd(), 1.3),              // 40 % form the head, the rest may stretch into the tail
+        soft: i < CN * 0.1,                                        // soft glow body, like the loop's glow layer
+        ph: rnd() * Math.PI * 2,
+        s: 1 + Math.pow(ra, 5) + (ra > 0.985 ? 2.5 : 0)            // same size distribution as the loop
+      });
+    }
+    const cGeo = new THREE.BufferGeometry();
+    const aPos = new THREE.BufferAttribute(cPos, 3).setUsage(THREE.DynamicDrawUsage);
+    const aSz = new THREE.BufferAttribute(cSize, 1).setUsage(THREE.DynamicDrawUsage);
+    const aAl = new THREE.BufferAttribute(cAlpha, 1).setUsage(THREE.DynamicDrawUsage);
+    cGeo.setAttribute('position', aPos); cGeo.setAttribute('aSize', aSz); cGeo.setAttribute('aAlpha', aAl);
+    cGeo.setAttribute('aColor', new THREE.BufferAttribute(cCol, 3));
+    for (let i = 0; i < CN; i++) cSoft[i] = P[i].soft ? 1 : 0;
+    cGeo.setAttribute('aSoft', new THREE.BufferAttribute(cSoft, 1));
+    const cMat = new THREE.ShaderMaterial({
+      uniforms: { uSize: uniforms.uSize, uGlow: uniforms.uGlow, uScale: uniforms.uScale, uVis: { value: 0 } },
+      transparent: true, depthWrite: false, depthTest: false, blending: THREE.CustomBlending,
+      blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor,
+      vertexShader: `attribute vec3 aColor; attribute float aSize; attribute float aAlpha; attribute float aSoft; uniform float uSize, uScale;
+        varying vec3 vColor; varying float vAlpha; varying float vSoft;
+        void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = (aSoft > 0.5 ? aSize : uSize * aSize * 0.86) * uScale; vColor = aColor; vAlpha = aAlpha; vSoft = aSoft; }`,
+      fragmentShader: `uniform float uGlow, uVis; varying vec3 vColor; varying float vAlpha; varying float vSoft;
+        void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; if (r > 1.0) discard;
+          vec3 c = clamp(mix(vec3(dot(vColor, vec3(0.299,0.587,0.114))), vColor, 1.55), 0.0, 1.0);
+          if (vSoft > 0.5) { vec3 g = c * exp(-r * r * 3.5) * (1.0 - r) * vAlpha * uGlow * 0.09 * uVis;
+            gl_FragColor = vec4(g, max(g.r, max(g.g, g.b))); return; }
+          float core = exp(-r * r * 7.0); float halo = exp(-r * r * 2.2) * 0.35;
+          vec3 o = mix(c, vec3(1.0), 0.08) * (core + halo) * vAlpha * uGlow * 0.95 * uVis;
+          gl_FragColor = vec4(o, max(o.r, max(o.g, o.b))); }`
+    });
+    const cPts = new THREE.Points(cGeo, cMat); cPts.frustumCulled = false;
+    const cScene = new THREE.Scene(); cScene.add(cPts);
+    const cCam = new THREE.OrthographicCamera(0, innerWidth, 0, innerHeight, -1, 1);   // pixel space, y down
     const label = document.createElement('span');
     label.className = 'lp-cursor-label'; label.setAttribute('aria-hidden', 'true'); label.textContent = cursorLabelText;
-    document.body.append(cv);
     if (cursorLabelText) document.body.append(label);
-    const CS = Math.max(0.3, opt('cursor-size', 1));
-    const SIZE = Math.round(128 * CS), cdpr = Math.min(devicePixelRatio, 2);
-    cv.width = cv.height = SIZE * cdpr; cv.style.width = cv.style.height = SIZE + 'px';
-    const ctx = cv.getContext('2d');
-    const N = 34;
-    const parts = Array.from({ length: N }, () => ({
-      r: (7 + Math.pow(rnd(), 0.8) * 20) * CS,     // orbit radius (px)
-      a: rnd() * Math.PI * 2,                       // angle
-      w: (0.5 + rnd() * 1.0) * (rnd() < 0.5 ? -1 : 1), // angular speed
-      e: 0.55 + rnd() * 0.45,                       // ellipse squash
-      s: (0.55 + Math.pow(rnd(), 5) * 1.3) * Math.sqrt(CS), // size
-      c: tints[Math.floor(rnd() * 3)], ph: rnd() * 6.28
-    }));
-    cur = { cv, label, ctx, parts, x: innerWidth / 2, y: innerHeight / 2, tx: innerWidth / 2, ty: innerHeight / 2,
-            vis: 0, want: 0, squeeze: 0, spin: 0, burst: 0, SIZE, cdpr };
+    const hx = new Float32Array(HIST), hy = new Float32Array(HIST);
+    cur = { CS_: CS, P, CN, HIST, hx, hy, cPos, cSize, cAlpha, aPos, aSz, aAl, cGeo, cMat, cScene, cCam, label,
+            x: innerWidth / 2, y: innerHeight / 2, tx: innerWidth / 2, ty: innerHeight / 2,
+            vis: 0, want: 0, squeeze: 0, spin: 1, burst: 0, fresh: true };
     const onCurMove = e => {
       if (e.pointerType !== 'mouse') return;
       cur.tx = e.clientX; cur.ty = e.clientY;
       const t = e.target;
       cur.want = (t && t.closest && t.closest('[data-logo-particles="hero"]') && !t.closest(NO_DRAG)) ? 1 : 0;
-      if (cur.vis < 0.01 && cur.want) { cur.x = cur.tx; cur.y = cur.ty; }   // appear where the mouse is
+      if (cur.vis < 0.01 && cur.want) { cur.x = cur.tx; cur.y = cur.ty; cur.fresh = true; }   // appear at the mouse
     };
     const onCurLeave = () => { cur.want = 0; };
     const onCurDown = e => { if (cur.want && e.pointerType === 'mouse') cur.burst = 1; };
     addEventListener('pointermove', onCurMove);
     addEventListener('pointerdown', onCurDown);
     document.addEventListener('mouseleave', onCurLeave);
+    cur.resize = () => { cCam.right = innerWidth; cCam.bottom = innerHeight; cCam.updateProjectionMatrix(); };
     cur.off = () => { removeEventListener('pointermove', onCurMove); removeEventListener('pointerdown', onCurDown);
-      document.removeEventListener('mouseleave', onCurLeave); cv.remove(); label.remove();
-      document.documentElement.classList.remove('lp-has-cursor'); };
+      document.removeEventListener('mouseleave', onCurLeave); label.remove(); cGeo.dispose(); cMat.dispose(); };
   }
   function drawCursor(dt, k, scrollFade) {
     if (!cur) return;
     const c = cur;
     c.x += (c.tx - c.x) * k(CUR_FOLLOW); c.y += (c.ty - c.y) * k(CUR_FOLLOW);
+    // history of head positions -> tail
+    if (c.fresh) { c.hx.fill(c.x); c.hy.fill(c.y); c.fresh = false; }
+    c.hx.copyWithin(1, 0); c.hy.copyWithin(1, 0); c.hx[0] = c.x; c.hy[0] = c.y;
     c.vis += (c.want * scrollFade - c.vis) * (1 - Math.exp(-dt * 7));
     c.squeeze += ((dragging ? 1 : 0) - c.squeeze) * (1 - Math.exp(-dt * 6));
-    c.spin += ((dragging ? Math.min(3, Math.abs(rot.ty - rot.y) * 40 + 1.2) : 1) - c.spin) * (1 - Math.exp(-dt * 4));
+    c.spin += ((dragging ? 2.2 : 1) - c.spin) * (1 - Math.exp(-dt * 4));
     c.burst *= Math.exp(-dt * 5);
-    const { ctx, SIZE, cdpr } = c;
-    c.cv.style.transform = `translate3d(${c.x - SIZE / 2}px, ${c.y - SIZE / 2}px, 0)`;
-    c.cv.style.opacity = c.vis.toFixed(3);
-    c.label.style.transform = `translate3d(${c.x + SIZE / 4}px, ${c.y - 7}px, 0)`;
-    c.label.style.opacity = (c.vis * (1 - c.squeeze * 0.85)).toFixed(3);
-    if (c.vis < 0.005) return;
-    ctx.setTransform(cdpr, 0, 0, cdpr, 0, 0);
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.globalCompositeOperation = 'lighter';
-    const cx = SIZE / 2, cy = SIZE / 2, t = performance.now() / 1000;
-    const shrink = 1 - c.squeeze * 0.3 + c.burst * 0.6;
-    for (const p of c.parts) {
-      p.a += p.w * dt * c.spin * (reduced ? 0.3 : 1);
-      const r = p.r * shrink;
-      const x = cx + Math.cos(p.a) * r, y = cy + Math.sin(p.a) * r * p.e;
-      const tw = 0.65 + 0.35 * Math.sin(t * 2 + p.ph);
-      const rad = p.s * 1.5;
-      const a = tw * (1 - c.squeeze * 0.35);
-      const [R, G, B] = p.c.map(v => Math.round(v * 255));
-      const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 3);
-      g.addColorStop(0, `rgba(${Math.min(255, R + 60)},${Math.min(255, G + 60)},${Math.min(255, B + 60)},${a})`);
-      g.addColorStop(0.35, `rgba(${R},${G},${B},${0.75 * a})`);
-      g.addColorStop(1, `rgba(${R},${G},${B},0)`);
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(x, y, rad * 3, 0, Math.PI * 2); ctx.fill();
+    c.cMat.uniforms.uVis.value = c.vis;
+    if (cursorLabelText) {
+      c.label.style.transform = `translate3d(${c.x + 26}px, ${c.y - 7}px, 0)`;
+      c.label.style.opacity = (c.vis * (1 - c.squeeze * 0.85)).toFixed(3);
     }
+    if (c.vis < 0.003) return;
+    const t = performance.now() / 1000, H = c.HIST - 1, CS_ = c.CS_;
+    const shrink = 1 - c.squeeze * 0.35 + c.burst * 0.8;
+    const jit = Math.min(uniforms.uJitter.value, 1.5);
+    for (let i = 0; i < c.CN; i++) {
+      const p = c.P[i];
+      const f = p.tail * H, i0 = Math.floor(f), i1 = Math.min(H, i0 + 1), fr = f - i0;
+      const bx = c.hx[i0] + (c.hx[i1] - c.hx[i0]) * fr, by = c.hy[i0] + (c.hy[i1] - c.hy[i0]) * fr;
+      p.a += p.w * dt * c.spin * (reduced ? 0.3 : 1);
+      const r = p.r * (1 - p.tail * 0.8) * shrink;
+      c.cPos[i * 3] = bx + Math.cos(p.a) * r + Math.sin(t * 1.7 + p.ph) * 0.8 * jit;
+      c.cPos[i * 3 + 1] = by + Math.sin(p.a) * r * p.e + Math.cos(t * 1.3 + p.ph) * 0.8 * jit;
+      c.cSize[i] = p.soft ? 26 * CS_ * (0.6 + p.e) * (1 - p.tail * 0.5) : p.s * (1 - p.tail * 0.3);
+      c.cAlpha[i] = (1 - p.tail * 0.5) * (0.8 + 0.2 * Math.sin(t * (0.6 + p.ph * 0.2) + p.ph) * Math.min(jit, 1));
+    }
+    c.aPos.needsUpdate = true; c.aSz.needsUpdate = true; c.aAl.needsUpdate = true;
   }
 
   /* ---------- intro, labels, chrome ---------- */
@@ -439,7 +476,7 @@ function init() {
     uniforms.uAspect.value = w / h;
     baseScale = Math.min(1.05, (w / h) * 0.95);
   }
-  addEventListener('resize', resize); resize();
+  addEventListener('resize', () => { resize(); if (cur) cur.resize(); }); resize();
 
   /* ---------- loop ---------- */
   const clock = new THREE.Clock();
@@ -464,8 +501,9 @@ function init() {
 
     // viscous follow (frame-rate independent)
     const k = rate => 1 - Math.exp(-dt * rate / (0.25 + settings.viscosity));
-    uniforms.uMouse.value.lerp(mouseTarget, k(3.0));
-    uniforms.uMouseB.value.lerp(mouseTarget, k(1.1));
+    const mt = cur ? curNDC.set(cur.x / innerWidth * 2 - 1, -(cur.y / innerHeight * 2 - 1)) : mouseTarget;
+    uniforms.uMouse.value.lerp(mt, k(cur ? 8.0 : 3.0));
+    uniforms.uMouseB.value.lerp(mt, k(1.1));
     uniforms.uMousePresence.value += (mouseIn - uniforms.uMousePresence.value) * k(1.5);
     rot.x += (rot.tx - rot.x) * k(2.6);
     rot.y += (rot.ty - rot.y) * k(2.6);
@@ -488,7 +526,9 @@ function init() {
     for (const h of hints) h.style.opacity = hintOp;
 
     drawCursor(dt, k, Math.max(0, 1 - p1 * 2.5));
+    renderer.clear();
     renderer.render(scene, camera);
+    if (cur && cur.cMat.uniforms.uVis.value > 0.003) renderer.render(cur.cScene, cur.cCam);
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);
@@ -499,12 +539,13 @@ function init() {
       ['pulse', 'Puls-Helligkeit', 0, 2], ['shimmer', 'Schimmern', 0, 3], ['shimmer-speed', 'Schimmer-Tempo', 0, 3],
       ['viscosity', 'Zähigkeit', 0, 3], ['mouse', 'Maus-Streuung', 0, 2],
       ['dissolve-start', 'Auflösung Start (vh)', 0, 3], ['dissolve-length', 'Auflösung Dauer (vh)', 0.1, 3],
-      ['offset-y', 'Logo-Position (vh)', -0.4, 0.4], ['scale', 'Logo-Größe', 0.4, 1.6]];
+      ['offset-y', 'Logo-Position (vh)', -0.4, 0.4], ['scale', 'Logo-Größe', 0.4, 1.6],
+      ['blend', 'Verschwimmen', 0, 2]];
     const apply = { size: v => uniforms.uSize.value = v, glow: v => uniforms.uGlow.value = v, flow: v => settings.flow = v,
       shimmer: v => uniforms.uJitter.value = v, pulse: v => uniforms.uPulse.value = v,
       'shimmer-speed': v => settings.shimmerSpeed = v,
       'dissolve-start': v => settings.dissolveStart = v, 'dissolve-length': v => settings.dissolveLength = Math.max(0.05, v),
-      'offset-y': v => settings.offsetY = v, scale: v => settings.scale = v, viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
+      'offset-y': v => settings.offsetY = v, scale: v => settings.scale = v, blend: v => uniforms.uBlend.value = v, viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
     const panel = document.createElement('div'); panel.className = 'lp-tune';
     const ck = k => k.replace(/-(\w)/g, (m, c) => c.toUpperCase());   // attribute name -> settings key
     panel.innerHTML = defs.map(([k, l, mn, mx]) =>

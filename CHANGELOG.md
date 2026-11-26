@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.0 – 2026-11-26
+
+- Cursor-Wolke läuft jetzt im selben WebGL-Canvas: identische Partikel, Größenverteilung, Logo-Farben und Glow-Schimmer wie der Loop (statt eigenem 2D-Canvas)
+- Schnelle Mausbewegungen ziehen die Wolke zu einem Kometenschweif, in Ruhe ist sie rund
+- Neu: `data-lp-blend` – Loop-Partikel unter dem Cursor verwirbeln und verschwimmen weich ineinander (Default 1, 0 = altes Ausweichen)
+- Die Loop-Interaktion folgt jetzt der Cursor-Wolke, damit beide an derselben Stelle reagieren
+- Neu: `data-lp-cursor-count`; Tuning-Panel: Regler „Verschwimmen“
+
 ## v1.5.0 – 2026-11-26
 
 - Partikel-Cursor: normaler Mauszeiger bleibt sichtbar, die Wolke zieht ihm nach statt ihn zu ersetzen

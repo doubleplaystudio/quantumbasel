@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.5.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.5.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.6.0/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.6.0/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -46,8 +46,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.5.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.5.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.6.0/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.6.0/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
@@ -81,6 +81,8 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 | `data-lp-cursor-label` | – | Optionaler Text neben der Wolke (Default: kein Text) |
 | `data-lp-cursor-trail` | `1` | Wie stark die Wolke nachzieht (höher = träger). Skaliert zusätzlich mit `data-lp-viscosity` |
 | `data-lp-cursor-size` | `1` | Größe der Cursor-Wolke |
+| `data-lp-cursor-count` | `320` | Anzahl Partikel der Cursor-Wolke |
+| `data-lp-blend` | `1` | Wie stark Loop-Partikel unter dem Cursor verwirbeln und weich verschwimmen (0 = nur ausweichen wie bis v1.5) |
 | `data-lp-count` / `data-lp-count-mobile` | `20000` / `9000` | Partikelanzahl |
 | `data-lp-tints` | Logo-Farben | Farben des Sternenfelds, z. B. `#b6f5a0,#6fe3d6,#6f95dc` |
 
@@ -89,7 +91,7 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 ## 5. Hinweise
 
 - **Designer-Vorschau:** Custom Code läuft im Designer nicht. Testen auf Staging (`*.webflow.io`).
-- **Partikel-Cursor:** Der normale Mauszeiger bleibt sichtbar, die Wolke zieht ihm nach. Über Links, Buttons und Formularfeldern im Hero blendet sie aus. Das Label lässt sich per CSS über `.lp-cursor-label` stylen (z. B. Schrift).
+- **Partikel-Cursor:** Die Wolke wird im selben WebGL-Canvas mit denselben Partikeln und Logo-Farben wie der Loop gerendert und liegt daher hinter dem Text der Seite. Bei schnellen Bewegungen zieht sie sich zu einem Schweif. Der normale Mauszeiger bleibt sichtbar, die Wolke zieht ihm nach. Über Links, Buttons und Formularfeldern im Hero blendet sie aus. Das Label lässt sich per CSS über `.lp-cursor-label` stylen (z. B. Schrift).
 - **Klickbarkeit im Hero:** Auf Links, Buttons und Formularfeldern startet kein Drag. Weitere Bereiche (z. B. ein Slider) mit `data-lp-no-drag` ausnehmen.
 - **Lenis:** Lenis wird automatisch erkannt (`window.lenis`). Scroll-Position und Replay laufen dann über Lenis.
 - **Kein WebGL:** In dem Fall bekommt `<html>` die Klasse `lp-no-webgl`. Darüber zeigt ihr in Webflow ein statisches Logo-Bild.
