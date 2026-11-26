@@ -14,6 +14,8 @@
  *            [data-logo-particles="reveal"]  optional – Element blendet nach dem Intro weich von unten ein (z. B. Subline, Button)
  *            [data-logo-particles="reveal-words"] optional – Text blendet Wort für Wort ein (z. B. Headline)
  *                                             Reihenfolge = DOM-Reihenfolge, gestaffelt; data-lp-delay="ms" überschreibt
+ *            [data-lp-inview="words"] / [data-lp-inview]  beliebige Elemente außerhalb des Heros: gleicher Stil,
+ *                                             startet beim Reinscrollen (data-lp-inview-repeat = erneut beim Zurückscrollen)
  * Optionen (Attribute auf der Hero-Section, alle optional):
  *   data-lp-viscosity="1"  data-lp-size="1"  data-lp-glow="1"  data-lp-flow="1"
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
@@ -83,6 +85,10 @@ function init() {
       transition-duration:.6s;transition-delay:var(--lp-od,0ms)}
     html.lp-text-out .lp-word{transform:translateY(-.35em)}
     html.lp-text-out [data-logo-particles="reveal"]{transform:translateY(-14px)}
+    [data-lp-inview]:not([data-lp-inview="words"]),.lp-iword{transition:opacity 1.1s cubic-bezier(.2,.7,.2,1),transform 1.1s cubic-bezier(.2,.7,.2,1),filter 1.1s cubic-bezier(.2,.7,.2,1);transition-delay:var(--lp-id,0ms)}
+    .lp-iword{display:inline-block}
+    html.lp-iv-ready [data-lp-inview]:not([data-lp-inview="words"]):not(.lp-iv-in){opacity:0;transform:translateY(24px);filter:blur(8px)}
+    html.lp-iv-ready [data-lp-inview="words"]:not(.lp-iv-in) .lp-iword{opacity:0;transform:translateY(.45em);filter:blur(8px)}
     .lp-tune{position:fixed;left:16px;bottom:16px;z-index:9999;width:260px;padding:14px;border-radius:12px;
       background:rgba(8,11,18,.9);border:1px solid rgba(255,255,255,.12);color:#eef4f6;font:12px/1.3 system-ui,sans-serif;backdrop-filter:blur(12px)}
     .lp-tune label{display:grid;grid-template-columns:1fr auto;gap:3px 8px;margin-bottom:9px;opacity:.85}
@@ -457,6 +463,52 @@ function init() {
       t += EL_STEP - WORD_STEP;
     });
   }
+  // In-view reveal for content outside the hero (same style as the hero text):
+  //   data-lp-inview="words" -> word by word (headlines),  data-lp-inview -> whole element (e.g. tabs, cards)
+  //   elements that enter the viewport together are staggered in DOM order; data-lp-inview-repeat replays on re-entry
+  let io = null;
+  {
+    const ivEls = [...document.querySelectorAll('[data-lp-inview]')];
+    if (ivEls.length && 'IntersectionObserver' in window && !reduced) {
+      ivEls.forEach(el => {
+        if (el.getAttribute('data-lp-inview') !== 'words' || el.dataset.lpIwords) return;
+        el.dataset.lpIwords = '1';
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const nodes = []; while (walker.nextNode()) if (walker.currentNode.nodeValue.trim()) nodes.push(walker.currentNode);
+        nodes.forEach(n => {
+          const frag = document.createDocumentFragment();
+          n.nodeValue.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            const w = document.createElement('span'); w.className = 'lp-iword'; w.textContent = part; frag.appendChild(w);
+          });
+          n.parentNode.replaceChild(frag, n);
+        });
+      });
+      document.documentElement.classList.add('lp-iv-ready');
+      const vis = new Set();
+      io = new IntersectionObserver(entries => {
+        const entering = entries.filter(e => e.isIntersecting && !e.target.classList.contains('lp-iv-in'))
+          .map(e => e.target).sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+        let t = 0;
+        entering.forEach(el => {
+          const own = el.getAttribute('data-lp-delay'); if (own) t = parseFloat(own);
+          if (el.getAttribute('data-lp-inview') === 'words') {
+            el.querySelectorAll('.lp-iword').forEach(w => { w.style.setProperty('--lp-id', t + 'ms'); t += 70; });
+            t += 90;
+          } else { el.style.setProperty('--lp-id', t + 'ms'); t += 160; }
+          el.classList.add('lp-iv-in'); vis.add(el);
+          if (!el.hasAttribute('data-lp-inview-repeat')) io.unobserve(el);
+        });
+        entries.forEach(e => {
+          if (!e.isIntersecting && e.target.hasAttribute('data-lp-inview-repeat') && e.boundingClientRect.top > 0) {
+            e.target.classList.remove('lp-iv-in');   // only reset when it left downwards (scrolled back up)
+          }
+        });
+      }, { rootMargin: '0px 0px -12% 0px', threshold: 0.15 });
+      ivEls.forEach(el => io.observe(el));
+    }
+  }
   const chromes = [...document.querySelectorAll('[data-logo-particles="chrome"]')];
   const hints = [...document.querySelectorAll('[data-logo-particles="hint"]')];
   const INTRO_MS = 3400;
@@ -605,6 +657,7 @@ function init() {
       removeEventListener('pointermove', onMove); removeEventListener('pointerup', onUp);
       removeEventListener('pointercancel', onUp); removeEventListener('resize', resize);
       document.removeEventListener('mouseleave', onLeave);
+      if (io) io.disconnect();
       geo.dispose(); glowGeo.dispose(); sGeo.dispose(); logoMat.dispose(); glowMat.dispose(); starMat.dispose();
       if (cur && cur.off) cur.off();
       renderer.dispose(); wrap.remove();

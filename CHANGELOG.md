@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.9.0 – 2026-11-26
+
+- Neu: `data-lp-inview="words"` / `data-lp-inview` – Reveal im Hero-Stil für beliebige Elemente außerhalb des Heros, ausgelöst beim Reinscrollen (IntersectionObserver)
+- Gemeinsam sichtbar werdende Elemente laufen in DOM-Reihenfolge gestaffelt, `data-lp-delay` überschreibt den Start
+- `data-lp-inview-repeat` spielt die Animation beim Zurückscrollen erneut ab
+- Eigene Wort-Klasse (`.lp-iword`), damit In-View-Texte nicht vom Hero-Fade-out beim Scrollen erfasst werden
+
 ## v1.8.0 – 2026-11-26
 
 - Neu: `data-lp-dissolve-trigger` – Partikel-Expansion startet ab einer Scroll-Schwelle und läuft zeitbasiert (easeInOut) ab, statt an die Scroll-Position gekoppelt zu sein; beim Zurückscrollen setzt sich das Logo wieder zusammen

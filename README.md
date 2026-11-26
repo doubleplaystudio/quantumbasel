@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.9.0/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.9.0/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -37,6 +37,8 @@ Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
 | Nav (oder anderes UI) | `data-logo-particles="intro-hide"` | optional, ausgeblendet, bis sich das Logo gebildet hat; kommt sofort zurück bei Scroll, Touch oder Taste |
 | Headline | `data-logo-particles="reveal-words"` | optional, blendet nach dem Intro Wort für Wort ein |
 | Subline, Button, … | `data-logo-particles="reveal"` | optional, blendet nach dem Intro weich von unten ein; Reihenfolge = DOM-Reihenfolge, gestaffelt. `data-lp-delay="ms"` setzt den Startzeitpunkt eines Elements manuell |
+| Headline außerhalb des Heros | `data-lp-inview="words"` | blendet beim Reinscrollen Wort für Wort ein (gleicher Stil wie der Hero) |
+| Beliebiges Element außerhalb des Heros (z. B. Bouncy Tabs, Karten) | `data-lp-inview` | blendet beim Reinscrollen weich von unten ein; Elemente, die gemeinsam reinkommen, laufen gestaffelt. `data-lp-inview-repeat` = beim Zurückscrollen erneut |
 
 Außerdem:
 - **`.main-content`** braucht `position: relative; z-index: 1`. Der Canvas liegt fixed bei `z-index: 0` direkt im Body.
@@ -46,8 +48,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.9.0/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.9.0/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
