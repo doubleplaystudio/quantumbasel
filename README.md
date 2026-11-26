@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.7.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.7.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -46,8 +46,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.7.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.7.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.8.0/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
@@ -84,6 +84,8 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 | `data-lp-cursor-count` | `320` | Anzahl Partikel der Cursor-Wolke |
 | `data-lp-blend` | `1` | Wie stark Loop-Partikel unter dem Cursor verwirbeln und weich verschwimmen (0 = nur ausweichen wie bis v1.5) |
 | `data-lp-tilt-length` | `1` | Scroll-Strecke (in Bildschirmhöhen), über die das Logo kippt und schrumpft |
+| `data-lp-dissolve-trigger` | – | Auflösung startet, sobald diese Scroll-Distanz (Bildschirmhöhen) überschritten ist, und läuft dann zeitbasiert ab; beim Zurückscrollen setzt sich das Logo wieder zusammen. Ersetzt `dissolve-start`/`dissolve-length` |
+| `data-lp-dissolve-duration` | `1.4` | Dauer der getriggerten Auflösung in Sekunden |
 | `data-lp-text-out-at` | `0.03` | Ab dieser Scroll-Distanz (Bildschirmhöhen) blenden `reveal`/`reveal-words`-Texte aus; zurück oben blenden sie wieder ein. `off` = nie ausblenden |
 | `data-lp-count` / `data-lp-count-mobile` | `20000` / `9000` | Partikelanzahl |
 | `data-lp-tints` | Logo-Farben | Farben des Sternenfelds, z. B. `#b6f5a0,#6fe3d6,#6f95dc` |

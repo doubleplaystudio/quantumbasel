@@ -28,6 +28,9 @@
  *   data-lp-blend="1"           wie stark Loop-Partikel unter dem Cursor verschwimmen (0 = nur ausweichen)
  *   data-lp-tilt-length="1"     Scroll-Strecke (vh), über die das Logo kippt und schrumpft
  *   data-lp-text-out-at="0.03"  ab dieser Scroll-Distanz (vh) blenden reveal-Texte aus; "off" = nie
+ *   data-lp-dissolve-trigger="0.3"  Auflösung startet ab dieser Scroll-Distanz (vh) und läuft zeitbasiert ab
+ *                                  (statt scroll-gekoppelt); ersetzt dissolve-start/-length
+ *   data-lp-dissolve-duration="1.4" Dauer dieser Auflösung in Sekunden
  *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
  *   data-lp-scale="1"     (Logo-Größe)
  *   Beide auch mit eigenem Mobile-Wert: data-lp-offset-y-mobile, data-lp-scale-mobile (< 768 px)
@@ -146,6 +149,7 @@ function init() {
     mouse: opt('mouse', 1), viscosity: opt('viscosity', 1),
     offsetY: optR('offset-y', 0), scale: optR('scale', 1), blend: opt('blend', 1),
     tiltLength: Math.max(0.05, opt('tilt-length', 1)), textOutAt: opt('text-out-at', 0.03),
+    dissolveTrigger: opt('dissolve-trigger', NaN), dissolveDuration: Math.max(0.1, opt('dissolve-duration', 1.4)),
     dissolveStart: opt('dissolve-start', 0.9), dissolveLength: Math.max(0.05, opt('dissolve-length', 1))
   };
   const uniforms = {
@@ -490,7 +494,7 @@ function init() {
 
   /* ---------- loop ---------- */
   const clock = new THREE.Clock();
-  let smoothScroll = 0, raf = 0, alive = true, textReturnT = 0;
+  let smoothScroll = 0, raf = 0, alive = true, textReturnT = 0, dissolveT = 0, dissolveOn = false;
   function frame() {
     if (!alive) return;
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
@@ -516,7 +520,18 @@ function init() {
           textReturnT = setTimeout(() => html.classList.remove('lp-text-return'), 1400); }
       }
     }
-    const p2 = Math.max(0, Math.min(1, (smoothScroll - settings.dissolveStart) / settings.dissolveLength));
+    let p2;
+    if (!isNaN(settings.dissolveTrigger)) {
+      // trigger mode: past the threshold the expansion plays on its own clock (and rewinds when scrolling back)
+      const sv = y / innerHeight;
+      if (!dissolveOn && sv > settings.dissolveTrigger) dissolveOn = true;
+      else if (dissolveOn && sv < settings.dissolveTrigger - 0.04) dissolveOn = false;   // small hysteresis
+      const dir = dissolveOn ? 1 : -1;
+      dissolveT = Math.max(0, Math.min(1, dissolveT + dir * dt / settings.dissolveDuration * (reduced ? 4 : 1)));
+      p2 = dissolveT < 0.5 ? 4 * dissolveT ** 3 : 1 - Math.pow(-2 * dissolveT + 2, 3) / 2;   // easeInOutCubic
+    } else {
+      p2 = Math.max(0, Math.min(1, (smoothScroll - settings.dissolveStart) / settings.dissolveLength));
+    }
     uniforms.uDissolve.value = p2;
 
     // viscous follow (frame-rate independent)

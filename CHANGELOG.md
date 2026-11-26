@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.0 – 2026-11-26
+
+- Neu: `data-lp-dissolve-trigger` – Partikel-Expansion startet ab einer Scroll-Schwelle und läuft zeitbasiert (easeInOut) ab, statt an die Scroll-Position gekoppelt zu sein; beim Zurückscrollen setzt sich das Logo wieder zusammen
+- Neu: `data-lp-dissolve-duration` – Dauer der Expansion in Sekunden (Default 1.4)
+- Ohne `dissolve-trigger` bleibt das bisherige scroll-gekoppelte Verhalten
+
 ## v1.7.0 – 2026-11-26
 
 - Neu: Headline, Subline und Button (`reveal` / `reveal-words`) blenden beim Scrollen im selben Stil aus (Fade, Blur, leicht nach oben, gestaffelt) und beim Zurückscrollen zügig wieder ein
