@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.1/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.1/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -46,8 +46,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.1/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.1/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
@@ -85,6 +85,7 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 ## 5. Hinweise
 
 - **Designer-Vorschau:** Custom Code läuft im Designer nicht. Testen auf Staging (`*.webflow.io`).
+- **Klickbarkeit im Hero:** Auf Links, Buttons und Formularfeldern startet kein Drag. Weitere Bereiche (z. B. ein Slider) mit `data-lp-no-drag` ausnehmen.
 - **Lenis:** Lenis wird automatisch erkannt (`window.lenis`). Scroll-Position und Replay laufen dann über Lenis.
 - **Kein WebGL:** In dem Fall bekommt `<html>` die Klasse `lp-no-webgl`. Darüber zeigt ihr in Webflow ein statisches Logo-Bild.
 - **`prefers-reduced-motion`:** Das Intro wird übersprungen, und die Szene steht still.

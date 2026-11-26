@@ -19,6 +19,7 @@
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
  *   data-lp-dissolve-start="0.9"  data-lp-dissolve-length="1"  (in Bildschirmhöhen)
  *   data-lp-reveal-at="0.8"  (Anteil des Intros, ab dem intro-hide-Elemente einblenden)
+ *   Kein Drag auf Links/Buttons/Formularfeldern; weitere Bereiche mit data-lp-no-drag ausnehmen
  *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
  *   data-lp-scale="1"     (Logo-Größe)
  *   Beide auch mit eigenem Mobile-Wert: data-lp-offset-y-mobile, data-lp-scale-mobile (< 768 px)
@@ -254,16 +255,28 @@ function init() {
   const rot = { x: 0, y: 0, tx: 0, ty: 0 };
   const mouseTarget = new THREE.Vector2(0, 0);
   let mouseIn = 0, dragging = false, lastX = 0, lastY = 0;
-  const onDown = e => { dragging = true; lastX = e.clientX; lastY = e.clientY; if (e.pointerType === 'mouse') hero.setPointerCapture(e.pointerId); };
+  // Never start a drag on interactive content (links, buttons, inputs) or opt-out areas
+  const NO_DRAG = 'a,button,input,textarea,select,label,[role="button"],[data-lp-no-drag]';
+  let downX = 0, downY = 0, captured = false, pid = null;
+  const onDown = e => {
+    if (e.button > 0 || (e.target.closest && e.target.closest(NO_DRAG))) return;
+    dragging = true; captured = false; pid = e.pointerId;
+    lastX = downX = e.clientX; lastY = downY = e.clientY;
+  };
   const onMove = e => {
     mouseTarget.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight * 2 - 1));
     mouseIn = 1;
     if (!dragging) return;
+    // capture the pointer only once it really moves, so plain clicks are never swallowed
+    if (!captured && e.pointerType === 'mouse' && Math.hypot(e.clientX - downX, e.clientY - downY) > 4) {
+      try { hero.setPointerCapture(pid); } catch (_) {}
+      captured = true;
+    }
     const dx = e.clientX - lastX, dy = e.clientY - lastY;
     lastX = e.clientX; lastY = e.clientY;
     rot.ty += dx * 0.005; rot.tx += (e.pointerType === 'mouse' ? dy : 0) * 0.005;
   };
-  const onUp = () => { dragging = false; };
+  const onUp = () => { dragging = false; captured = false; };
   const onLeave = () => { mouseIn = 0; };
   hero.addEventListener('pointerdown', onDown);
   addEventListener('pointermove', onMove);

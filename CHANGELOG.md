@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.1 – 2026-11-26
+
+- Fix: Klicks auf Links und Buttons in der Hero-Section gingen verloren, weil die Drag-Fläche den Zeiger sofort eingefangen hat
+- Drag startet nicht mehr auf Links, Buttons, Formularfeldern und Elementen mit `data-lp-no-drag`
+- Zeiger wird erst nach > 4 px Bewegung eingefangen; normale Klicks bleiben unberührt
+
 ## v1.3.0 – 2026-11-26
 
 - Neu: `data-lp-offset-y` – Logo vertikal verschieben (Anteil der Bildschirmhöhe), z. B. für Hero-Text unten
