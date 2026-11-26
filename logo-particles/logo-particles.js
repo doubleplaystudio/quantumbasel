@@ -20,6 +20,9 @@
  *   data-lp-dissolve-start="0.9"  data-lp-dissolve-length="1"  (in Bildschirmhöhen)
  *   data-lp-reveal-at="0.8"  (Anteil des Intros, ab dem intro-hide-Elemente einblenden)
  *   Kein Drag auf Links/Buttons/Formularfeldern; weitere Bereiche mit data-lp-no-drag ausnehmen
+ *   data-lp-cursor="false"   Partikel-Cursor abschalten (nur Desktop mit Maus aktiv)
+ *   data-lp-cursor-label="Drag"  Text neben dem Cursor (leer = kein Text)
+ *   data-lp-cursor-size="1"     Größe der Cursor-Wolke
  *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
  *   data-lp-scale="1"     (Logo-Größe)
  *   Beide auch mit eigenem Mobile-Wert: data-lp-offset-y-mobile, data-lp-scale-mobile (< 768 px)
@@ -52,6 +55,12 @@ function init() {
     .lp-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
     .lp-canvas canvas{display:block;width:100%;height:100%}
     [data-logo-particles="hero"]{cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+    .lp-has-cursor [data-logo-particles="hero"],.lp-has-cursor [data-logo-particles="hero"] *{cursor:none}
+    .lp-has-cursor [data-logo-particles="hero"] :is(a,button,[role="button"],label),.lp-has-cursor [data-logo-particles="hero"] :is(a,button,[role="button"],label) *{cursor:pointer}
+    .lp-has-cursor [data-logo-particles="hero"] :is(input,textarea,select,[data-lp-no-drag]),.lp-has-cursor [data-logo-particles="hero"] :is(input,textarea,select,[data-lp-no-drag]) *{cursor:auto}
+    .lp-cursor{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;opacity:0;will-change:transform;mix-blend-mode:screen}
+    .lp-cursor-label{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;opacity:0;will-change:transform;
+      font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#fff;white-space:nowrap;mix-blend-mode:difference}
     [data-logo-particles="hero"]:active{cursor:grabbing}
     [data-logo-particles="chrome"]{pointer-events:none}
     [data-logo-particles="replay"]{pointer-events:auto}
@@ -283,6 +292,85 @@ function init() {
   addEventListener('pointerup', onUp); addEventListener('pointercancel', onUp);
   document.addEventListener('mouseleave', onLeave);
 
+
+  /* ---------- particle cursor (desktop, fine pointer only) ---------- */
+  const CURSOR_ON = hero.getAttribute('data-lp-cursor') !== 'false' && matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const cursorLabelText = hero.hasAttribute('data-lp-cursor-label') ? hero.getAttribute('data-lp-cursor-label') : 'Drag';
+  let cur = null;
+  if (CURSOR_ON) {
+    document.documentElement.classList.add('lp-has-cursor');
+    const cv = document.createElement('canvas');
+    cv.className = 'lp-cursor'; cv.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.className = 'lp-cursor-label'; label.setAttribute('aria-hidden', 'true'); label.textContent = cursorLabelText;
+    document.body.append(cv, label);
+    const CS = Math.max(0.3, opt('cursor-size', 1));
+    const SIZE = Math.round(128 * CS), cdpr = Math.min(devicePixelRatio, 2);
+    cv.width = cv.height = SIZE * cdpr; cv.style.width = cv.style.height = SIZE + 'px';
+    const ctx = cv.getContext('2d');
+    const N = 34;
+    const parts = Array.from({ length: N }, () => ({
+      r: (7 + Math.pow(rnd(), 0.8) * 20) * CS,     // orbit radius (px)
+      a: rnd() * Math.PI * 2,                       // angle
+      w: (0.5 + rnd() * 1.0) * (rnd() < 0.5 ? -1 : 1), // angular speed
+      e: 0.55 + rnd() * 0.45,                       // ellipse squash
+      s: (0.55 + Math.pow(rnd(), 5) * 1.3) * Math.sqrt(CS), // size
+      c: tints[Math.floor(rnd() * 3)], ph: rnd() * 6.28
+    }));
+    cur = { cv, label, ctx, parts, x: innerWidth / 2, y: innerHeight / 2, tx: innerWidth / 2, ty: innerHeight / 2,
+            vis: 0, want: 0, squeeze: 0, spin: 0, burst: 0, SIZE, cdpr };
+    const onCurMove = e => {
+      if (e.pointerType !== 'mouse') return;
+      cur.tx = e.clientX; cur.ty = e.clientY;
+      const t = e.target;
+      cur.want = (t && t.closest && t.closest('[data-logo-particles="hero"]') && !t.closest(NO_DRAG)) ? 1 : 0;
+      if (cur.vis < 0.01 && cur.want) { cur.x = cur.tx; cur.y = cur.ty; }   // appear where the mouse is
+    };
+    const onCurLeave = () => { cur.want = 0; };
+    const onCurDown = e => { if (cur.want && e.pointerType === 'mouse') cur.burst = 1; };
+    addEventListener('pointermove', onCurMove);
+    addEventListener('pointerdown', onCurDown);
+    document.addEventListener('mouseleave', onCurLeave);
+    cur.off = () => { removeEventListener('pointermove', onCurMove); removeEventListener('pointerdown', onCurDown);
+      document.removeEventListener('mouseleave', onCurLeave); cv.remove(); label.remove();
+      document.documentElement.classList.remove('lp-has-cursor'); };
+  }
+  function drawCursor(dt, k, scrollFade) {
+    if (!cur) return;
+    const c = cur;
+    c.x += (c.tx - c.x) * k(9); c.y += (c.ty - c.y) * k(9);
+    c.vis += (c.want * scrollFade - c.vis) * (1 - Math.exp(-dt * 7));
+    c.squeeze += ((dragging ? 1 : 0) - c.squeeze) * (1 - Math.exp(-dt * 6));
+    c.spin += ((dragging ? Math.min(3, Math.abs(rot.ty - rot.y) * 40 + 1.2) : 1) - c.spin) * (1 - Math.exp(-dt * 4));
+    c.burst *= Math.exp(-dt * 5);
+    const { ctx, SIZE, cdpr } = c;
+    c.cv.style.transform = `translate3d(${c.x - SIZE / 2}px, ${c.y - SIZE / 2}px, 0)`;
+    c.cv.style.opacity = c.vis.toFixed(3);
+    c.label.style.transform = `translate3d(${c.x + SIZE / 4}px, ${c.y - 7}px, 0)`;
+    c.label.style.opacity = (c.vis * (1 - c.squeeze * 0.85)).toFixed(3);
+    if (c.vis < 0.005) return;
+    ctx.setTransform(cdpr, 0, 0, cdpr, 0, 0);
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.globalCompositeOperation = 'lighter';
+    const cx = SIZE / 2, cy = SIZE / 2, t = performance.now() / 1000;
+    const shrink = 1 - c.squeeze * 0.3 + c.burst * 0.6;
+    for (const p of c.parts) {
+      p.a += p.w * dt * c.spin * (reduced ? 0.3 : 1);
+      const r = p.r * shrink;
+      const x = cx + Math.cos(p.a) * r, y = cy + Math.sin(p.a) * r * p.e;
+      const tw = 0.65 + 0.35 * Math.sin(t * 2 + p.ph);
+      const rad = p.s * 1.5;
+      const a = tw * (1 - c.squeeze * 0.35);
+      const [R, G, B] = p.c.map(v => Math.round(v * 255));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 3);
+      g.addColorStop(0, `rgba(${Math.min(255, R + 60)},${Math.min(255, G + 60)},${Math.min(255, B + 60)},${a})`);
+      g.addColorStop(0.35, `rgba(${R},${G},${B},${0.75 * a})`);
+      g.addColorStop(1, `rgba(${R},${G},${B},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, rad * 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
   /* ---------- intro, labels, chrome ---------- */
   document.querySelectorAll('[data-logo-particles="split"]').forEach(el => {
     if (el.dataset.lpSplit) return; el.dataset.lpSplit = '1';
@@ -400,6 +488,7 @@ function init() {
     const hintOp = Math.max(0, uniforms.uIntro.value - 0.8) * 5 * (1 - Math.min(1, p1 * 6));
     for (const h of hints) h.style.opacity = hintOp;
 
+    drawCursor(dt, k, Math.max(0, 1 - p1 * 2.5));
     renderer.render(scene, camera);
     raf = requestAnimationFrame(frame);
   }
@@ -442,6 +531,7 @@ function init() {
       removeEventListener('pointercancel', onUp); removeEventListener('resize', resize);
       document.removeEventListener('mouseleave', onLeave);
       geo.dispose(); glowGeo.dispose(); sGeo.dispose(); logoMat.dispose(); glowMat.dispose(); starMat.dispose();
+      if (cur && cur.off) cur.off();
       renderer.dispose(); wrap.remove();
     }
   };

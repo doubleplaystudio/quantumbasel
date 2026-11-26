@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.0 – 2026-11-26
+
+- Neu: Partikel-Cursor über dem Hero – kleine Wolke in den Logo-Farben statt Systemcursor, folgt zäh der Maus, zieht sich beim Drehen zusammen, kurzer Puls beim Klick
+- Label „Drag“ neben der Wolke (`data-lp-cursor-label`, leer = aus), Größe über `data-lp-cursor-size`, abschaltbar mit `data-lp-cursor="false"`
+- Nur auf Geräten mit Maus aktiv; über Links, Buttons und Formularfeldern erscheint der normale Cursor, beim Wegscrollen blendet die Wolke aus
+
 ## v1.3.1 – 2026-11-26
 
 - Fix: Klicks auf Links und Buttons in der Hero-Section gingen verloren, weil die Drag-Fläche den Zeiger sofort eingefangen hat
