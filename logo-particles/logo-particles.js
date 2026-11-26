@@ -11,6 +11,9 @@
  *            [data-logo-particles="hint"]    optional – Hinweis, blendet nach Intro ein
  *            [data-logo-particles="intro-hide"] optional – z. B. Nav: versteckt, bis sich das Logo gebildet hat
  *                                             (kommt sofort zurück bei Scroll / Touch / Taste)
+ *            [data-logo-particles="reveal"]  optional – Element blendet nach dem Intro weich von unten ein (z. B. Subline, Button)
+ *            [data-logo-particles="reveal-words"] optional – Text blendet Wort für Wort ein (z. B. Headline)
+ *                                             Reihenfolge = DOM-Reihenfolge, gestaffelt; data-lp-delay="ms" überschreibt
  * Optionen (Attribute auf der Hero-Section, alle optional):
  *   data-lp-viscosity="1"  data-lp-size="1"  data-lp-glow="1"  data-lp-flow="1"
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
@@ -57,6 +60,11 @@ function init() {
     [data-logo-particles="hint"]{opacity:0}
     [data-logo-particles="intro-hide"]{transition:opacity .9s cubic-bezier(.2,.7,.2,1),visibility .9s}
     html:not(.lp-intro-done) [data-logo-particles="intro-hide"]{opacity:0;visibility:hidden;pointer-events:none}
+    [data-logo-particles="reveal"],.lp-word{transition:opacity 1.1s cubic-bezier(.2,.7,.2,1),transform 1.1s cubic-bezier(.2,.7,.2,1),filter 1.1s cubic-bezier(.2,.7,.2,1)}
+    .lp-word{display:inline-block}
+    html.lp-intro-done [data-logo-particles="reveal"],html.lp-intro-done .lp-word{transition-delay:var(--lp-d,0ms)}
+    html:not(.lp-intro-done) [data-logo-particles="reveal"]{opacity:0;transform:translateY(24px);filter:blur(8px);pointer-events:none}
+    html:not(.lp-intro-done) .lp-word{opacity:0;transform:translateY(.45em);filter:blur(8px)}
     .lp-tune{position:fixed;left:16px;bottom:16px;z-index:9999;width:260px;padding:14px;border-radius:12px;
       background:rgba(8,11,18,.9);border:1px solid rgba(255,255,255,.12);color:#eef4f6;font:12px/1.3 system-ui,sans-serif;backdrop-filter:blur(12px)}
     .lp-tune label{display:grid;grid-template-columns:1fr auto;gap:3px 8px;margin-bottom:9px;opacity:.85}
@@ -270,6 +278,34 @@ function init() {
     el.innerHTML = [...el.textContent].map((c, i) =>
       `<span class="lp-letter" aria-hidden="true" style="transition-delay:${base + i * 60}ms">${c === ' ' ? '&nbsp;' : c}</span>`).join('');
   });
+  // Headline / subline / button: staggered reveal once the logo has formed (DOM order)
+  {
+    let t = 0;
+    const WORD_STEP = 70, EL_STEP = 160;
+    document.querySelectorAll('[data-logo-particles="reveal"],[data-logo-particles="reveal-words"]').forEach(el => {
+      const own = el.getAttribute('data-lp-delay');
+      if (own !== null && own !== '') t = parseFloat(own);
+      if (el.getAttribute('data-logo-particles') === 'reveal') {
+        el.style.setProperty('--lp-d', t + 'ms'); t += EL_STEP; return;
+      }
+      if (!el.dataset.lpWords) {
+        el.dataset.lpWords = '1';
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const nodes = []; while (walker.nextNode()) if (walker.currentNode.nodeValue.trim()) nodes.push(walker.currentNode);
+        nodes.forEach(n => {
+          const frag = document.createDocumentFragment();
+          n.nodeValue.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            const w = document.createElement('span'); w.className = 'lp-word'; w.textContent = part; frag.appendChild(w);
+          });
+          n.parentNode.replaceChild(frag, n);
+        });
+      }
+      el.querySelectorAll('.lp-word').forEach(w => { w.style.setProperty('--lp-d', t + 'ms'); t += WORD_STEP; });
+      t += EL_STEP - WORD_STEP;
+    });
+  }
   const chromes = [...document.querySelectorAll('[data-logo-particles="chrome"]')];
   const hints = [...document.querySelectorAll('[data-logo-particles="hint"]')];
   const INTRO_MS = 3400;

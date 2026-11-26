@@ -35,6 +35,8 @@ Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
 | Replay-Button | `data-logo-particles="replay"` | im Overlay |
 | Hinweis-Text | `data-logo-particles="hint"` | optional, erscheint nach dem Intro |
 | Nav (oder anderes UI) | `data-logo-particles="intro-hide"` | optional, ausgeblendet, bis sich das Logo gebildet hat; kommt sofort zurück bei Scroll, Touch oder Taste |
+| Headline | `data-logo-particles="reveal-words"` | optional, blendet nach dem Intro Wort für Wort ein |
+| Subline, Button, … | `data-logo-particles="reveal"` | optional, blendet nach dem Intro weich von unten ein; Reihenfolge = DOM-Reihenfolge, gestaffelt. `data-lp-delay="ms"` setzt den Startzeitpunkt eines Elements manuell |
 
 Außerdem:
 - **`.main-content`** braucht `position: relative; z-index: 1`. Der Canvas liegt fixed bei `z-index: 0` direkt im Body.
@@ -50,10 +52,10 @@ Außerdem:
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
 
-**Nur bei `intro-hide`:** Damit die Nav beim Laden nicht kurz aufblitzt, kommt zusätzlich dieses Snippet in **Page Settings → Inside `<head>`**. Der Timer blendet die Nav nach 5 s auf jeden Fall ein, auch wenn das Script mal nicht lädt.
+**Bei `intro-hide` und `reveal`:** Damit die Nav beim Laden nicht kurz aufblitzt, kommt zusätzlich dieses Snippet in **Page Settings → Inside `<head>`**. Der Timer blendet die Nav nach 5 s auf jeden Fall ein, auch wenn das Script mal nicht lädt.
 
 ```html
-<style>html:not(.lp-intro-done) [data-logo-particles="intro-hide"]{opacity:0;visibility:hidden}</style>
+<style>html:not(.lp-intro-done) [data-logo-particles="intro-hide"],html:not(.lp-intro-done) [data-logo-particles^="reveal"]{opacity:0;visibility:hidden}</style>
 <script>setTimeout(function(){document.documentElement.classList.add('lp-intro-done')},5000)</script>
 ```
 

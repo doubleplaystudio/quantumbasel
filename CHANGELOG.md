@@ -6,6 +6,9 @@
 - Neu: `data-lp-scale` – Logo-Größe
 - Beide mit Mobile-Override: `data-lp-offset-y-mobile`, `data-lp-scale-mobile` (< 768 px)
 - Tuning-Panel: Regler „Logo-Position“ und „Logo-Größe“; „Attribute kopieren“ gibt auf Mobile die `-mobile`-Attribute aus
+- Neu: `data-logo-particles="reveal-words"` – Headline blendet nach dem Intro Wort für Wort ein (Fade, Blur, leicht von unten)
+- Neu: `data-logo-particles="reveal"` – Elemente wie Subline oder Button blenden gestaffelt danach ein; `data-lp-delay` überschreibt den Zeitpunkt
+- Head-Snippet erweitert, damit auch `reveal`-Elemente beim Laden nicht aufblitzen
 - Defaults unverändert
 
 ## v1.2.0 – 2026-11-16
