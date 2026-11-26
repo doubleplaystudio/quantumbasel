@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.10.3 – 2026-11-26
+
+- Fix: Beim Zurückscrollen (nach oben) blenden die per Scroll-out versteckten Inhalte wieder ein, sobald sie oben ins Bild kommen – vorher erst, wenn sie schon in der unteren Bildhälfte standen
+- Scroll-out ist jetzt richtungsabhängig: Ausblenden nur beim Runterscrollen
+
 ## v1.10.2 – 2026-11-26
 
 - Fix: Scroll-out (`data-lp-inview-out`) misst jetzt die Unterkante der animierten Inhalte statt der Section. In hohen Sections (z. B. 100 vh mit mittigem Text) blendete der Text sonst erst aus, als er schon fast aus dem Bild war

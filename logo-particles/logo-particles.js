@@ -531,9 +531,11 @@ function init() {
     g, th: parseFloat(g.getAttribute('data-lp-inview-out')) || 0.6, out: false,
     els: g.matches('[data-lp-inview]') ? [g] : [...g.querySelectorAll('[data-lp-inview]')]
   }));
-  function updateInviewOut() {
+  let outLastY = null;
+  function updateInviewOut(y) {
     if (!outGroups.length) return;
     const vh = innerHeight;
+    const dir = outLastY === null ? 0 : Math.sign(y - outLastY); outLastY = y;   // 1 = down, -1 = up
     for (const G of outGroups) {
       // measure the animated content itself (lowest visible in-view element), not the section edge –
       // tall sections would otherwise only fade once their text has already left the screen
@@ -541,7 +543,7 @@ function init() {
       for (const el of G.els) { if (!inactivePanel(el)) b = Math.max(b, el.getBoundingClientRect().bottom); }
       if (b === -Infinity) b = G.g.getBoundingClientRect().bottom;
       b /= vh;
-      if (!G.out && b < G.th) {
+      if (!G.out && b < G.th && dir > 0) {
         G.out = true; let t = 0;
         for (const el of G.els) {
           if (!el.classList.contains('lp-iv-in')) continue;
@@ -551,7 +553,8 @@ function init() {
           } else { el.style.setProperty('--lp-iod', t + 'ms'); t += 60; }
           el.classList.remove('lp-iv-back'); el.classList.add('lp-iv-out');
         }
-      } else if (G.out && b > G.th + 0.05) {
+      // back in: scrolling up -> as soon as the content re-enters from the top; otherwise (jumps) past the threshold
+      } else if (G.out && ((dir < 0 && b > 0.2) || b > G.th + 0.05)) {
         G.out = false;
         for (const el of G.els) {
           if (!el.classList.contains('lp-iv-out')) continue;
@@ -665,7 +668,7 @@ function init() {
     for (const h of hints) h.style.opacity = hintOp;
 
     drawCursor(dt, k, Math.max(0, 1 - p1 * 2.5));
-    updateInviewOut();
+    updateInviewOut(y);
     renderer.clear();
     renderer.render(scene, camera);
     if (cur && cur.cMat.uniforms.uVis.value > 0.003) renderer.render(cur.cScene, cur.cCam);
