@@ -26,6 +26,8 @@
  *   data-lp-cursor-size="1"     Größe der Cursor-Wolke
  *   data-lp-cursor-count="320"  Anzahl Partikel der Cursor-Wolke
  *   data-lp-blend="1"           wie stark Loop-Partikel unter dem Cursor verschwimmen (0 = nur ausweichen)
+ *   data-lp-tilt-length="1"     Scroll-Strecke (vh), über die das Logo kippt und schrumpft
+ *   data-lp-text-out-at="0.03"  ab dieser Scroll-Distanz (vh) blenden reveal-Texte aus; "off" = nie
  *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
  *   data-lp-scale="1"     (Logo-Größe)
  *   Beide auch mit eigenem Mobile-Wert: data-lp-offset-y-mobile, data-lp-scale-mobile (< 768 px)
@@ -73,6 +75,11 @@ function init() {
     html.lp-intro-done [data-logo-particles="reveal"],html.lp-intro-done .lp-word{transition-delay:var(--lp-d,0ms)}
     html:not(.lp-intro-done) [data-logo-particles="reveal"]{opacity:0;transform:translateY(24px);filter:blur(8px);pointer-events:none}
     html:not(.lp-intro-done) .lp-word{opacity:0;transform:translateY(.45em);filter:blur(8px)}
+    html.lp-text-return [data-logo-particles="reveal"],html.lp-text-return .lp-word{transition-delay:var(--lp-od,0ms)}
+    html.lp-text-out [data-logo-particles="reveal"],html.lp-text-out .lp-word{opacity:0;filter:blur(8px);pointer-events:none;
+      transition-duration:.6s;transition-delay:var(--lp-od,0ms)}
+    html.lp-text-out .lp-word{transform:translateY(-.35em)}
+    html.lp-text-out [data-logo-particles="reveal"]{transform:translateY(-14px)}
     .lp-tune{position:fixed;left:16px;bottom:16px;z-index:9999;width:260px;padding:14px;border-radius:12px;
       background:rgba(8,11,18,.9);border:1px solid rgba(255,255,255,.12);color:#eef4f6;font:12px/1.3 system-ui,sans-serif;backdrop-filter:blur(12px)}
     .lp-tune label{display:grid;grid-template-columns:1fr auto;gap:3px 8px;margin-bottom:9px;opacity:.85}
@@ -138,6 +145,7 @@ function init() {
     shimmer: reduced ? 0 : opt('shimmer', 1), shimmerSpeed: opt('shimmer-speed', 1), pulse: opt('pulse', 1),
     mouse: opt('mouse', 1), viscosity: opt('viscosity', 1),
     offsetY: optR('offset-y', 0), scale: optR('scale', 1), blend: opt('blend', 1),
+    tiltLength: Math.max(0.05, opt('tilt-length', 1)), textOutAt: opt('text-out-at', 0.03),
     dissolveStart: opt('dissolve-start', 0.9), dissolveLength: Math.max(0.05, opt('dissolve-length', 1))
   };
   const uniforms = {
@@ -417,13 +425,14 @@ function init() {
   });
   // Headline / subline / button: staggered reveal once the logo has formed (DOM order)
   {
-    let t = 0;
-    const WORD_STEP = 70, EL_STEP = 160;
+    let t = 0, to = 0;
+    const WORD_STEP = 70, EL_STEP = 160, OUT_WORD = 22, OUT_EL = 60;
     document.querySelectorAll('[data-logo-particles="reveal"],[data-logo-particles="reveal-words"]').forEach(el => {
       const own = el.getAttribute('data-lp-delay');
       if (own !== null && own !== '') t = parseFloat(own);
       if (el.getAttribute('data-logo-particles') === 'reveal') {
-        el.style.setProperty('--lp-d', t + 'ms'); t += EL_STEP; return;
+        el.style.setProperty('--lp-d', t + 'ms'); t += EL_STEP;
+        el.style.setProperty('--lp-od', to + 'ms'); to += OUT_EL; return;
       }
       if (!el.dataset.lpWords) {
         el.dataset.lpWords = '1';
@@ -439,7 +448,8 @@ function init() {
           n.parentNode.replaceChild(frag, n);
         });
       }
-      el.querySelectorAll('.lp-word').forEach(w => { w.style.setProperty('--lp-d', t + 'ms'); t += WORD_STEP; });
+      el.querySelectorAll('.lp-word').forEach(w => { w.style.setProperty('--lp-d', t + 'ms'); t += WORD_STEP;
+        w.style.setProperty('--lp-od', to + 'ms'); to += OUT_WORD; });
       t += EL_STEP - WORD_STEP;
     });
   }
@@ -480,7 +490,7 @@ function init() {
 
   /* ---------- loop ---------- */
   const clock = new THREE.Clock();
-  let smoothScroll = 0, raf = 0, alive = true;
+  let smoothScroll = 0, raf = 0, alive = true, textReturnT = 0;
   function frame() {
     if (!alive) return;
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
@@ -495,7 +505,17 @@ function init() {
     const y = l && typeof l.scroll === 'number' ? l.scroll : scrollY;
     const target = y / innerHeight;
     smoothScroll += (target - smoothScroll) * (reduced ? 1 : (l ? 0.3 : 0.08));
-    const p1 = Math.min(1, smoothScroll);
+    const p1 = Math.min(1, smoothScroll / settings.tiltLength);
+    // headline / subline / button fade out as soon as the user starts scrolling (raw scroll, no lag)
+    if (!isNaN(settings.textOutAt)) {
+      const out = y / innerHeight > settings.textOutAt;
+      const html = document.documentElement;
+      if (out !== html.classList.contains('lp-text-out')) {
+        html.classList.toggle('lp-text-out', out);
+        if (!out) { html.classList.add('lp-text-return'); clearTimeout(textReturnT);
+          textReturnT = setTimeout(() => html.classList.remove('lp-text-return'), 1400); }
+      }
+    }
     const p2 = Math.max(0, Math.min(1, (smoothScroll - settings.dissolveStart) / settings.dissolveLength));
     uniforms.uDissolve.value = p2;
 
@@ -540,12 +560,12 @@ function init() {
       ['viscosity', 'Zähigkeit', 0, 3], ['mouse', 'Maus-Streuung', 0, 2],
       ['dissolve-start', 'Auflösung Start (vh)', 0, 3], ['dissolve-length', 'Auflösung Dauer (vh)', 0.1, 3],
       ['offset-y', 'Logo-Position (vh)', -0.4, 0.4], ['scale', 'Logo-Größe', 0.4, 1.6],
-      ['blend', 'Verschwimmen', 0, 2]];
+      ['blend', 'Verschwimmen', 0, 2], ['tilt-length', 'Kippen Dauer (vh)', 0.1, 2]];
     const apply = { size: v => uniforms.uSize.value = v, glow: v => uniforms.uGlow.value = v, flow: v => settings.flow = v,
       shimmer: v => uniforms.uJitter.value = v, pulse: v => uniforms.uPulse.value = v,
       'shimmer-speed': v => settings.shimmerSpeed = v,
       'dissolve-start': v => settings.dissolveStart = v, 'dissolve-length': v => settings.dissolveLength = Math.max(0.05, v),
-      'offset-y': v => settings.offsetY = v, scale: v => settings.scale = v, blend: v => uniforms.uBlend.value = v, viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
+      'offset-y': v => settings.offsetY = v, scale: v => settings.scale = v, blend: v => uniforms.uBlend.value = v, 'tilt-length': v => settings.tiltLength = Math.max(0.05, v), viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
     const panel = document.createElement('div'); panel.className = 'lp-tune';
     const ck = k => k.replace(/-(\w)/g, (m, c) => c.toUpperCase());   // attribute name -> settings key
     panel.innerHTML = defs.map(([k, l, mn, mx]) =>

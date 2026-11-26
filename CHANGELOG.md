@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.7.0 – 2026-11-26
+
+- Neu: Headline, Subline und Button (`reveal` / `reveal-words`) blenden beim Scrollen im selben Stil aus (Fade, Blur, leicht nach oben, gestaffelt) und beim Zurückscrollen zügig wieder ein
+- Neu: `data-lp-text-out-at` – ab welcher Scroll-Distanz die Texte ausblenden (Default 0.03 vh ≈ 30 px, `off` = nie)
+- Neu: `data-lp-tilt-length` – Dauer des Kippens/Schrumpfens beim Scrollen (Default 1 vh)
+- Tuning-Panel: Regler „Kippen Dauer“
+
 ## v1.6.0 – 2026-11-26
 
 - Cursor-Wolke läuft jetzt im selben WebGL-Canvas: identische Partikel, Größenverteilung, Logo-Farben und Glow-Schimmer wie der Loop (statt eigenem 2D-Canvas)
