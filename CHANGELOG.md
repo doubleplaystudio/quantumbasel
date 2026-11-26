@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.10.2 – 2026-11-26
+
+- Fix: Scroll-out (`data-lp-inview-out`) misst jetzt die Unterkante der animierten Inhalte statt der Section. In hohen Sections (z. B. 100 vh mit mittigem Text) blendete der Text sonst erst aus, als er schon fast aus dem Bild war
+
 ## v1.10.1 – 2026-11-26
 
 - In-View-Reveal und Scroll-out: Elemente in versteckten Tab-Panels (Bouncy Tabs) laufen ohne Verzögerung mit und verlängern die Staffelung nicht mehr – Tab-Nav, Info-Box und Bild lassen sich so einzeln nacheinander animieren

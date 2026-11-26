@@ -17,7 +17,7 @@
  *            [data-lp-inview="words"] / [data-lp-inview]  beliebige Elemente außerhalb des Heros: gleicher Stil,
  *                                             startet beim Reinscrollen (data-lp-inview-repeat = erneut beim Zurückscrollen)
  *            [data-lp-inview-out="0.6"]      auf einer Section: alle data-lp-inview-Elemente darin blenden nach oben aus,
- *                                             sobald die Unterkante der Section 60 % der Bildschirmhöhe passiert
+ *                                             sobald das unterste davon 60 % der Bildschirmhöhe nach oben passiert
  * Optionen (Attribute auf der Hero-Section, alle optional):
  *   data-lp-viscosity="1"  data-lp-size="1"  data-lp-glow="1"  data-lp-flow="1"
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
@@ -535,7 +535,12 @@ function init() {
     if (!outGroups.length) return;
     const vh = innerHeight;
     for (const G of outGroups) {
-      const b = G.g.getBoundingClientRect().bottom / vh;
+      // measure the animated content itself (lowest visible in-view element), not the section edge –
+      // tall sections would otherwise only fade once their text has already left the screen
+      let b = -Infinity;
+      for (const el of G.els) { if (!inactivePanel(el)) b = Math.max(b, el.getBoundingClientRect().bottom); }
+      if (b === -Infinity) b = G.g.getBoundingClientRect().bottom;
+      b /= vh;
       if (!G.out && b < G.th) {
         G.out = true; let t = 0;
         for (const el of G.els) {

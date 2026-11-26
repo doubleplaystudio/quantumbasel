@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.2/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.2/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -39,7 +39,7 @@ Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
 | Subline, Button, … | `data-logo-particles="reveal"` | optional, blendet nach dem Intro weich von unten ein; Reihenfolge = DOM-Reihenfolge, gestaffelt. `data-lp-delay="ms"` setzt den Startzeitpunkt eines Elements manuell |
 | Headline außerhalb des Heros | `data-lp-inview="words"` | blendet beim Reinscrollen Wort für Wort ein (gleicher Stil wie der Hero) |
 | Beliebiges Element außerhalb des Heros (z. B. Bouncy Tabs, Karten) | `data-lp-inview` | blendet beim Reinscrollen weich von unten ein; Elemente, die gemeinsam reinkommen, laufen gestaffelt. `data-lp-inview-repeat` = beim Zurückscrollen erneut |
-| Section mit In-View-Elementen | `data-lp-inview-out` (optional Wert, Default `0.6`) | alle `data-lp-inview`-Elemente darin blenden beim Rausscrollen nach oben aus (gleicher Stil wie die Hero-Headline), sobald die Unterkante der Section über 60 % der Bildschirmhöhe wandert; beim Zurückscrollen wieder ein |
+| Section mit In-View-Elementen | `data-lp-inview-out` (optional Wert, Default `0.6`) | alle `data-lp-inview`-Elemente darin blenden beim Rausscrollen nach oben aus (gleicher Stil wie die Hero-Headline), sobald das unterste animierte Element darin über 60 % der Bildschirmhöhe nach oben wandert; beim Zurückscrollen wieder ein |
 
 Außerdem:
 - **`.main-content`** braucht `position: relative; z-index: 1`. Der Canvas liegt fixed bei `z-index: 0` direkt im Body.
@@ -49,8 +49,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.2/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.2/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
