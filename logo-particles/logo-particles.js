@@ -474,6 +474,7 @@ function init() {
   //   data-lp-inview="words" -> word by word (headlines),  data-lp-inview -> whole element (e.g. tabs, cards)
   //   elements that enter the viewport together are staggered in DOM order; data-lp-inview-repeat replays on re-entry
   let io = null;
+  const inactivePanel = el => el.closest('[data-bouncy-tabs-panel]:not([data-active]), [role="tabpanel"][hidden]');
   {
     const ivEls = [...document.querySelectorAll('[data-lp-inview]')];
     if (ivEls.length && 'IntersectionObserver' in window && !reduced) {
@@ -499,6 +500,13 @@ function init() {
           .map(e => e.target).sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
         let t = 0;
         entering.forEach(el => {
+          // content in a hidden tab panel (e.g. Bouncy Tabs) reveals silently and does not count in the stagger
+          if (inactivePanel(el)) {
+            el.querySelectorAll('.lp-iword').forEach(w => w.style.setProperty('--lp-id', '0ms'));
+            el.style.setProperty('--lp-id', '0ms'); el.classList.add('lp-iv-in');
+            if (!el.hasAttribute('data-lp-inview-repeat')) io.unobserve(el);
+            return;
+          }
           const own = el.getAttribute('data-lp-delay'); if (own) t = parseFloat(own);
           if (el.getAttribute('data-lp-inview') === 'words') {
             el.querySelectorAll('.lp-iword').forEach(w => { w.style.setProperty('--lp-id', t + 'ms'); t += 70; });
@@ -532,6 +540,7 @@ function init() {
         G.out = true; let t = 0;
         for (const el of G.els) {
           if (!el.classList.contains('lp-iv-in')) continue;
+          if (inactivePanel(el)) { el.style.setProperty('--lp-iod', '0ms'); el.classList.add('lp-iv-out'); continue; }
           if (el.getAttribute('data-lp-inview') === 'words') {
             el.querySelectorAll('.lp-iword').forEach(w => { w.style.setProperty('--lp-iod', t + 'ms'); t += 22; });
           } else { el.style.setProperty('--lp-iod', t + 'ms'); t += 60; }

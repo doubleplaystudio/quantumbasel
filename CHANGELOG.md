@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.10.1 – 2026-11-26
+
+- In-View-Reveal und Scroll-out: Elemente in versteckten Tab-Panels (Bouncy Tabs) laufen ohne Verzögerung mit und verlängern die Staffelung nicht mehr – Tab-Nav, Info-Box und Bild lassen sich so einzeln nacheinander animieren
+
 ## v1.10.0 – 2026-11-26
 
 - Neu: `data-lp-inview-out` auf einer Section – die `data-lp-inview`-Elemente darin blenden beim Rausscrollen gestaffelt nach oben aus (Fade, Blur, wie die Hero-Headline) und beim Zurückscrollen wieder ein

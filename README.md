@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -49,8 +49,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.10.1/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
@@ -99,6 +99,7 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 
 - **Designer-Vorschau:** Custom Code läuft im Designer nicht. Testen auf Staging (`*.webflow.io`).
 - **Partikel-Cursor:** Die Wolke wird im selben WebGL-Canvas mit denselben Partikeln und Logo-Farben wie der Loop gerendert und liegt daher hinter dem Text der Seite. Bei schnellen Bewegungen zieht sie sich zu einem Schweif. Der normale Mauszeiger bleibt sichtbar, die Wolke zieht ihm nach. Über Links, Buttons und Formularfeldern im Hero blendet sie aus. Das Label lässt sich per CSS über `.lp-cursor-label` stylen (z. B. Schrift).
+- **In-View in Tabs:** Elemente in versteckten Tab-Panels (Bouncy Tabs, `[role="tabpanel"][hidden]`) werden ohne Animation freigeschaltet und zählen nicht in die Staffelung. So lassen sich Nav, Info-Box und Bild einzeln mit `data-lp-inview` versehen und laufen nacheinander ein.
 - **Klickbarkeit im Hero:** Auf Links, Buttons und Formularfeldern startet kein Drag. Weitere Bereiche (z. B. ein Slider) mit `data-lp-no-drag` ausnehmen.
 - **Lenis:** Lenis wird automatisch erkannt (`window.lenis`). Scroll-Position und Replay laufen dann über Lenis.
 - **Kein WebGL:** In dem Fall bekommt `<html>` die Klasse `lp-no-webgl`. Darüber zeigt ihr in Webflow ein statisches Logo-Bild.
