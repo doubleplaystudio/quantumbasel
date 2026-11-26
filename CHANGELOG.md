@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.10.0 – 2026-11-26
+
+- Neu: `data-lp-inview-out` auf einer Section – die `data-lp-inview`-Elemente darin blenden beim Rausscrollen gestaffelt nach oben aus (Fade, Blur, wie die Hero-Headline) und beim Zurückscrollen wieder ein
+- Schwelle als Wert des Attributs (Anteil der Bildschirmhöhe, den die Unterkante der Section passieren muss; Default 0.6)
+
 ## v1.9.0 – 2026-11-26
 
 - Neu: `data-lp-inview="words"` / `data-lp-inview` – Reveal im Hero-Stil für beliebige Elemente außerhalb des Heros, ausgelöst beim Reinscrollen (IntersectionObserver)

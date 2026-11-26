@@ -16,6 +16,8 @@
  *                                             Reihenfolge = DOM-Reihenfolge, gestaffelt; data-lp-delay="ms" überschreibt
  *            [data-lp-inview="words"] / [data-lp-inview]  beliebige Elemente außerhalb des Heros: gleicher Stil,
  *                                             startet beim Reinscrollen (data-lp-inview-repeat = erneut beim Zurückscrollen)
+ *            [data-lp-inview-out="0.6"]      auf einer Section: alle data-lp-inview-Elemente darin blenden nach oben aus,
+ *                                             sobald die Unterkante der Section 60 % der Bildschirmhöhe passiert
  * Optionen (Attribute auf der Hero-Section, alle optional):
  *   data-lp-viscosity="1"  data-lp-size="1"  data-lp-glow="1"  data-lp-flow="1"
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
@@ -89,6 +91,11 @@ function init() {
     .lp-iword{display:inline-block}
     html.lp-iv-ready [data-lp-inview]:not([data-lp-inview="words"]):not(.lp-iv-in){opacity:0;transform:translateY(24px);filter:blur(8px)}
     html.lp-iv-ready [data-lp-inview="words"]:not(.lp-iv-in) .lp-iword{opacity:0;transform:translateY(.45em);filter:blur(8px)}
+    .lp-iv-back:not([data-lp-inview="words"]),.lp-iv-back .lp-iword{transition-delay:var(--lp-iod,0ms)}
+    [data-lp-inview].lp-iv-out:not([data-lp-inview="words"]),[data-lp-inview="words"].lp-iv-out .lp-iword{opacity:0;filter:blur(8px);pointer-events:none;
+      transition-duration:.6s;transition-delay:var(--lp-iod,0ms)}
+    [data-lp-inview].lp-iv-out:not([data-lp-inview="words"]){transform:translateY(-14px)}
+    [data-lp-inview="words"].lp-iv-out .lp-iword{transform:translateY(-.35em)}
     .lp-tune{position:fixed;left:16px;bottom:16px;z-index:9999;width:260px;padding:14px;border-radius:12px;
       background:rgba(8,11,18,.9);border:1px solid rgba(255,255,255,.12);color:#eef4f6;font:12px/1.3 system-ui,sans-serif;backdrop-filter:blur(12px)}
     .lp-tune label{display:grid;grid-template-columns:1fr auto;gap:3px 8px;margin-bottom:9px;opacity:.85}
@@ -509,6 +516,37 @@ function init() {
       ivEls.forEach(el => io.observe(el));
     }
   }
+  // Scroll-out for in-view content, per section: put data-lp-inview-out="0.6" on a section (or any wrapper).
+  // When its bottom edge moves above 60 % of the viewport height, all data-lp-inview elements inside fade out
+  // upwards (same style as the hero text, staggered); scrolling back fades them in again.
+  const outGroups = reduced ? [] : [...document.querySelectorAll('[data-lp-inview-out]')].map(g => ({
+    g, th: parseFloat(g.getAttribute('data-lp-inview-out')) || 0.6, out: false,
+    els: g.matches('[data-lp-inview]') ? [g] : [...g.querySelectorAll('[data-lp-inview]')]
+  }));
+  function updateInviewOut() {
+    if (!outGroups.length) return;
+    const vh = innerHeight;
+    for (const G of outGroups) {
+      const b = G.g.getBoundingClientRect().bottom / vh;
+      if (!G.out && b < G.th) {
+        G.out = true; let t = 0;
+        for (const el of G.els) {
+          if (!el.classList.contains('lp-iv-in')) continue;
+          if (el.getAttribute('data-lp-inview') === 'words') {
+            el.querySelectorAll('.lp-iword').forEach(w => { w.style.setProperty('--lp-iod', t + 'ms'); t += 22; });
+          } else { el.style.setProperty('--lp-iod', t + 'ms'); t += 60; }
+          el.classList.remove('lp-iv-back'); el.classList.add('lp-iv-out');
+        }
+      } else if (G.out && b > G.th + 0.05) {
+        G.out = false;
+        for (const el of G.els) {
+          if (!el.classList.contains('lp-iv-out')) continue;
+          el.classList.remove('lp-iv-out'); el.classList.add('lp-iv-back');
+          clearTimeout(el._lpBackT); el._lpBackT = setTimeout(() => el.classList.remove('lp-iv-back'), 1400);
+        }
+      }
+    }
+  }
   const chromes = [...document.querySelectorAll('[data-logo-particles="chrome"]')];
   const hints = [...document.querySelectorAll('[data-logo-particles="hint"]')];
   const INTRO_MS = 3400;
@@ -613,6 +651,7 @@ function init() {
     for (const h of hints) h.style.opacity = hintOp;
 
     drawCursor(dt, k, Math.max(0, 1 - p1 * 2.5));
+    updateInviewOut();
     renderer.clear();
     renderer.render(scene, camera);
     if (cur && cur.cMat.uniforms.uVis.value > 0.003) renderer.render(cur.cScene, cur.cCam);
