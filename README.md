@@ -19,8 +19,8 @@ WebGL-Partikel-Hero (Three.js). Die Logo-Form kommt aus `quantumbasel.data.js`, 
 Die Partikeldaten sind ca. 210 KB groß und passen damit nicht in Webflows Custom-Code-Felder (Limit: 50.000 Zeichen). Beide Dateien liegen in diesem Repo und werden per jsDelivr über ein Release-Tag geladen:
 
 ```
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/logo-particles.js
-https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/quantumbasel.data.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/logo-particles.js
+https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/quantumbasel.data.js
 ```
 
 Three.js lädt das Modul selbst von jsDelivr (v0.170, gepinnt).
@@ -44,8 +44,8 @@ Außerdem:
 ## 3. Custom Code (Page Settings → Before `</body>`)
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/quantumbasel.data.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.2.0/logo-particles/logo-particles.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/quantumbasel.data.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/doubleplaystudio/quantumbasel@v1.3.0/logo-particles/logo-particles.js"></script>
 ```
 
 Die Data-Datei muss **vor** dem Modul geladen werden.
@@ -72,6 +72,9 @@ Die Data-Datei muss **vor** dem Modul geladen werden.
 | `data-lp-dissolve-start` | `0.9` | Scroll-Distanz (in Bildschirmhöhen), ab der sich das Logo auflöst |
 | `data-lp-dissolve-length` | `1` | Scroll-Strecke (in Bildschirmhöhen), über die sich das Logo auflöst |
 | `data-lp-reveal-at` | `0.8` | Anteil des Intros, ab dem `intro-hide`-Elemente einblenden (1 = erst ganz am Ende) |
+| `data-lp-offset-y` | `0` | Logo nach oben (+) oder unten (−) verschieben, als Anteil der Bildschirmhöhe; z. B. `0.1` für Text unten im Hero |
+| `data-lp-scale` | `1` | Logo-Größe |
+| `data-lp-offset-y-mobile` / `data-lp-scale-mobile` | – | Eigene Werte unter 768 px; ohne Angabe gelten die Desktop-Werte |
 | `data-lp-count` / `data-lp-count-mobile` | `20000` / `9000` | Partikelanzahl |
 | `data-lp-tints` | Logo-Farben | Farben des Sternenfelds, z. B. `#b6f5a0,#6fe3d6,#6f95dc` |
 

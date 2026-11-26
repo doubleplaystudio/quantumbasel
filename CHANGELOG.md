@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.0 – 2026-11-26
+
+- Neu: `data-lp-offset-y` – Logo vertikal verschieben (Anteil der Bildschirmhöhe), z. B. für Hero-Text unten
+- Neu: `data-lp-scale` – Logo-Größe
+- Beide mit Mobile-Override: `data-lp-offset-y-mobile`, `data-lp-scale-mobile` (< 768 px)
+- Tuning-Panel: Regler „Logo-Position“ und „Logo-Größe“; „Attribute kopieren“ gibt auf Mobile die `-mobile`-Attribute aus
+- Defaults unverändert
+
 ## v1.2.0 – 2026-11-16
 
 - Neu: `data-logo-particles="intro-hide"` – Elemente (z. B. die Nav) bleiben ausgeblendet, bis sich das Logo gebildet hat, und blenden dann weich ein

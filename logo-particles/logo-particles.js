@@ -16,6 +16,9 @@
  *   data-lp-shimmer="1"    data-lp-shimmer-speed="1"  data-lp-pulse="1"
  *   data-lp-dissolve-start="0.9"  data-lp-dissolve-length="1"  (in Bildschirmhöhen)
  *   data-lp-reveal-at="0.8"  (Anteil des Intros, ab dem intro-hide-Elemente einblenden)
+ *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
+ *   data-lp-scale="1"     (Logo-Größe)
+ *   Beide auch mit eigenem Mobile-Wert: data-lp-offset-y-mobile, data-lp-scale-mobile (< 768 px)
  *   data-lp-mouse="1" data-lp-count="20000" data-lp-count-mobile="9000"
  *   data-lp-tints="#b6f5a0,#6fe3d6,#6f95dc"  (Farben des Hintergrund-Sternenfelds)
  * Tuning:    ?lp-tune an die URL hängen -> Regler-Panel inkl. "Attribute kopieren"
@@ -31,6 +34,8 @@ function init() {
   const opt = (name, def) => { const v = hero.getAttribute('data-lp-' + name); return v === null || v === '' ? def : parseFloat(v); };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMobile = matchMedia('(max-width: 767px)').matches || (navigator.maxTouchPoints > 1 && innerWidth < 1000);
+  const optR = (name, def) => { const m = isMobile ? hero.getAttribute('data-lp-' + name + '-mobile') : null;
+    return m !== null && m !== '' ? parseFloat(m) : opt(name, def); };
   const COUNT = Math.round(isMobile ? opt('count-mobile', 9000) : opt('count', 20000));
   const STARS = isMobile ? 900 : 2200;
   const hexToRgb = h => { const n = parseInt(h.trim().replace('#', ''), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
@@ -115,6 +120,7 @@ function init() {
     size: opt('size', 1), glow: opt('glow', 1), flow: reduced ? 0 : opt('flow', 1),
     shimmer: reduced ? 0 : opt('shimmer', 1), shimmerSpeed: opt('shimmer-speed', 1), pulse: opt('pulse', 1),
     mouse: opt('mouse', 1), viscosity: opt('viscosity', 1),
+    offsetY: optR('offset-y', 0), scale: optR('scale', 1),
     dissolveStart: opt('dissolve-start', 0.9), dissolveLength: Math.max(0.05, opt('dissolve-length', 1))
   };
   const uniforms = {
@@ -289,6 +295,7 @@ function init() {
 
   /* ---------- resize ---------- */
   let baseScale = 1;
+  const VIEW_H = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); // world units per viewport height (at z=0)
   function resize() {
     const w = innerWidth, h = innerHeight;
     renderer.setSize(w, h, false);
@@ -334,8 +341,8 @@ function init() {
     group.rotation.y = rot.y + Math.sin(t * 0.25) * 0.22 * sway;
     group.rotation.x = rot.x + Math.sin(t * 0.18) * 0.08 * sway - p1 * 0.95;
     group.rotation.z = -p1 * 0.25;
-    group.scale.setScalar(baseScale * (1 - p1 * 0.38));
-    group.position.y = p1 * 0.42;
+    group.scale.setScalar(baseScale * settings.scale * (1 - p1 * 0.38));
+    group.position.y = settings.offsetY * VIEW_H + p1 * 0.42;
     stars.rotation.y = t * 0.006 + smoothScroll * 0.15;
     stars.rotation.x = smoothScroll * 0.1;
 
@@ -354,11 +361,13 @@ function init() {
     const defs = [['size', 'Partikelgröße', 0.4, 2.5], ['glow', 'Helligkeit', 0.2, 2], ['flow', 'Puls-Tempo', 0, 3],
       ['pulse', 'Puls-Helligkeit', 0, 2], ['shimmer', 'Schimmern', 0, 3], ['shimmer-speed', 'Schimmer-Tempo', 0, 3],
       ['viscosity', 'Zähigkeit', 0, 3], ['mouse', 'Maus-Streuung', 0, 2],
-      ['dissolve-start', 'Auflösung Start (vh)', 0, 3], ['dissolve-length', 'Auflösung Dauer (vh)', 0.1, 3]];
+      ['dissolve-start', 'Auflösung Start (vh)', 0, 3], ['dissolve-length', 'Auflösung Dauer (vh)', 0.1, 3],
+      ['offset-y', 'Logo-Position (vh)', -0.4, 0.4], ['scale', 'Logo-Größe', 0.4, 1.6]];
     const apply = { size: v => uniforms.uSize.value = v, glow: v => uniforms.uGlow.value = v, flow: v => settings.flow = v,
       shimmer: v => uniforms.uJitter.value = v, pulse: v => uniforms.uPulse.value = v,
       'shimmer-speed': v => settings.shimmerSpeed = v,
-      'dissolve-start': v => settings.dissolveStart = v, 'dissolve-length': v => settings.dissolveLength = Math.max(0.05, v), viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
+      'dissolve-start': v => settings.dissolveStart = v, 'dissolve-length': v => settings.dissolveLength = Math.max(0.05, v),
+      'offset-y': v => settings.offsetY = v, scale: v => settings.scale = v, viscosity: v => settings.viscosity = v, mouse: v => uniforms.uMouseAmt.value = v };
     const panel = document.createElement('div'); panel.className = 'lp-tune';
     const ck = k => k.replace(/-(\w)/g, (m, c) => c.toUpperCase());   // attribute name -> settings key
     panel.innerHTML = defs.map(([k, l, mn, mx]) =>
@@ -367,7 +376,7 @@ function init() {
     panel.addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return;
       const v = +e.target.value; settings[ck(k)] = v; apply[k](v); e.target.previousElementSibling.textContent = v.toFixed(2); });
     panel.querySelector('button').addEventListener('click', async e => {
-      const txt = defs.map(([k]) => `data-lp-${k}="${(+settings[ck(k)]).toFixed(2)}"`).join(' ');
+      const txt = defs.map(([k]) => `data-lp-${k}${isMobile && (k === 'offset-y' || k === 'scale') ? '-mobile' : ''}="${(+settings[ck(k)]).toFixed(2)}"`).join(' ');
       try { await navigator.clipboard.writeText(txt); e.target.textContent = 'Kopiert ✓'; }
       catch { e.target.textContent = txt; }
     });
