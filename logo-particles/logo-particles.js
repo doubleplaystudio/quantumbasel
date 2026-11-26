@@ -21,7 +21,8 @@
  *   data-lp-reveal-at="0.8"  (Anteil des Intros, ab dem intro-hide-Elemente einblenden)
  *   Kein Drag auf Links/Buttons/Formularfeldern; weitere Bereiche mit data-lp-no-drag ausnehmen
  *   data-lp-cursor="false"   Partikel-Cursor abschalten (nur Desktop mit Maus aktiv)
- *   data-lp-cursor-label="Drag"  Text neben dem Cursor (leer = kein Text)
+ *   data-lp-cursor-label=""    optional – Text neben der Wolke (Default: kein Text)
+ *   data-lp-cursor-trail="1"   wie stark die Wolke dem Zeiger nachzieht (höher = träger)
  *   data-lp-cursor-size="1"     Größe der Cursor-Wolke
  *   data-lp-offset-y="0"  (Logo verschieben, Anteil der Bildschirmhöhe, + = nach oben)
  *   data-lp-scale="1"     (Logo-Größe)
@@ -54,14 +55,10 @@ function init() {
   css.textContent = `
     .lp-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
     .lp-canvas canvas{display:block;width:100%;height:100%}
-    [data-logo-particles="hero"]{cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none}
-    .lp-has-cursor [data-logo-particles="hero"],.lp-has-cursor [data-logo-particles="hero"] *{cursor:none}
-    .lp-has-cursor [data-logo-particles="hero"] :is(a,button,[role="button"],label),.lp-has-cursor [data-logo-particles="hero"] :is(a,button,[role="button"],label) *{cursor:pointer}
-    .lp-has-cursor [data-logo-particles="hero"] :is(input,textarea,select,[data-lp-no-drag]),.lp-has-cursor [data-logo-particles="hero"] :is(input,textarea,select,[data-lp-no-drag]) *{cursor:auto}
+    [data-logo-particles="hero"]{touch-action:pan-y;-webkit-user-select:none;user-select:none}
     .lp-cursor{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;opacity:0;will-change:transform;mix-blend-mode:screen}
     .lp-cursor-label{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;opacity:0;will-change:transform;
       font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#fff;white-space:nowrap;mix-blend-mode:difference}
-    [data-logo-particles="hero"]:active{cursor:grabbing}
     [data-logo-particles="chrome"]{pointer-events:none}
     [data-logo-particles="replay"]{pointer-events:auto}
     .lp-letter{display:inline-block;opacity:0;transform:translateY(.35em);filter:blur(6px);
@@ -294,8 +291,9 @@ function init() {
 
 
   /* ---------- particle cursor (desktop, fine pointer only) ---------- */
+  const CUR_FOLLOW = 5 / Math.max(0.2, opt('cursor-trail', 1));   // follow rate; lower = more trailing
   const CURSOR_ON = hero.getAttribute('data-lp-cursor') !== 'false' && matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const cursorLabelText = hero.hasAttribute('data-lp-cursor-label') ? hero.getAttribute('data-lp-cursor-label') : 'Drag';
+  const cursorLabelText = hero.getAttribute('data-lp-cursor-label') || '';
   let cur = null;
   if (CURSOR_ON) {
     document.documentElement.classList.add('lp-has-cursor');
@@ -303,7 +301,8 @@ function init() {
     cv.className = 'lp-cursor'; cv.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
     label.className = 'lp-cursor-label'; label.setAttribute('aria-hidden', 'true'); label.textContent = cursorLabelText;
-    document.body.append(cv, label);
+    document.body.append(cv);
+    if (cursorLabelText) document.body.append(label);
     const CS = Math.max(0.3, opt('cursor-size', 1));
     const SIZE = Math.round(128 * CS), cdpr = Math.min(devicePixelRatio, 2);
     cv.width = cv.height = SIZE * cdpr; cv.style.width = cv.style.height = SIZE + 'px';
@@ -338,7 +337,7 @@ function init() {
   function drawCursor(dt, k, scrollFade) {
     if (!cur) return;
     const c = cur;
-    c.x += (c.tx - c.x) * k(9); c.y += (c.ty - c.y) * k(9);
+    c.x += (c.tx - c.x) * k(CUR_FOLLOW); c.y += (c.ty - c.y) * k(CUR_FOLLOW);
     c.vis += (c.want * scrollFade - c.vis) * (1 - Math.exp(-dt * 7));
     c.squeeze += ((dragging ? 1 : 0) - c.squeeze) * (1 - Math.exp(-dt * 6));
     c.spin += ((dragging ? Math.min(3, Math.abs(rot.ty - rot.y) * 40 + 1.2) : 1) - c.spin) * (1 - Math.exp(-dt * 4));

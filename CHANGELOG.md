@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.5.0 – 2026-11-26
+
+- Partikel-Cursor: normaler Mauszeiger bleibt sichtbar, die Wolke zieht ihm nach statt ihn zu ersetzen
+- Kein Label mehr per Default (`data-lp-cursor-label` bleibt optional)
+- Neu: `data-lp-cursor-trail` – wie stark die Wolke nachzieht
+- Hero hat keinen Grab-Cursor mehr
+
 ## v1.4.0 – 2026-11-26
 
 - Neu: Partikel-Cursor über dem Hero – kleine Wolke in den Logo-Farben statt Systemcursor, folgt zäh der Maus, zieht sich beim Drehen zusammen, kurzer Puls beim Klick
